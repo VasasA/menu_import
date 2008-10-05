@@ -1,0 +1,5 @@
+; $Id$
+name = "Menu Import"
+description = "Import menu hierarchy from CSV or TSV file"
+package = "Development"
+dependencies = menu

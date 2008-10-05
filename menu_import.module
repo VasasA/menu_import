@@ -1,0 +1,685 @@
+<?php
+// $Id$
+
+/**
+ * implementation of hook_help
+ */
+function menu_import_help($section = '') {
+    $output = '';
+    
+    switch($section) {
+    	case 'admin/help#menu_import':
+            $output .= '<p>';
+            $output .= t('The Menu Import module allows you to import a menu hierarchy from a CSV or TSV file.  This can be used to either arrange pre-existing content or stub out an arrangement with empty nodes.');
+            $output .= '</p>';
+        break;
+    }
+    
+    return $output;
+}
+
+/**
+ * implementation of hook_perm
+ */
+function menu_import_perm() {
+	return array('menu import');
+}
+
+
+/**
+ * implementation of hook_menu
+ */
+function menu_import_menu($may_cache) {
+	$items = array();
+    if($may_cache) {
+    	$items[] = array(
+            'path' => 'admin/content/menu_import',
+            'title' => t('Import Menu Structure'),
+            'description' => t('Import menu from CSV or TSV file'),
+            'callback' => 'menu_import_page',
+            'access' => user_access('menu import')
+        );
+        $items[] = array(
+            'path' => 'admin/content/menu_import/add',
+            'title' => t('New Import'),
+            'type' => MENU_DEFAULT_LOCAL_TASK
+        );
+        $items[] = array(
+            'path' => 'admin/content/menu_import/settings',
+            'type' => MENU_LOCAL_TASK,
+            'title' => t('Settings'),
+            'callback' => 'drupal_get_form',
+            'callback arguments' => 'menu_import_settings',
+            'access' => user_access('menu import')
+        );
+        
+    }
+    
+    return $items;
+}
+
+/**
+ * Main settings form
+ */
+function menu_import_settings() {
+    $form = array();
+    $form['menu_import_csv_separator'] = array(
+        '#type' => 'textfield',
+        '#size' => 6,
+        '#title' => t('Field separator symbol'),
+        '#description' => t('Enter the symbol that separates fields in your CSV files. Default: comma [,].'),
+        '#default_value' => variable_get('menu_import_csv_separator', ','),
+    );
+    $form['menu_import_csv_qualifier'] = array(
+        '#type' => 'textfield',
+        '#size' => 6,
+        '#title' => t('Text qualifier symbol'),
+        '#description' => t('Enter the symbol that wraps text fields in your CSV files. Default: double-quotation marks ["].'),
+        '#default_value' => variable_get('menu_import_csv_qualifier', '"'),
+    );
+    return system_settings_form($form);
+}
+
+/**
+ * Main callback for going through the import process.  As this is a
+ * multi-page form, this function has to handle redirection to validation
+ * functions and managing the state of the form.
+ */
+function menu_import_page() {
+	
+  // compile all values into single array
+  $edit = array_merge((array)$_SESSION['menu_import'], (array) $_POST);
+  
+  // validate form if necessary
+  if($_SESSION['menu_import_page'] && $_POST) {
+    $fn = $_SESSION['menu_import_page'] . '_validate';
+    $fn($_POST['op'], $edit);
+  }
+  else {
+    $_SESSION['menu_import_page'] = '_menu_import_start';
+  }
+  
+  // prevent drupal_get_form from processing submission
+  unset($_POST);
+  
+  // get form content
+  $output = drupal_get_form($_SESSION['menu_import_page'], $edit);
+  // save everything back to the session
+  $_SESSION['menu_import'] = $edit;
+  
+  return $output;
+}
+
+/**************************************
+ * IMPORT STAGE 1
+ * upload the file
+ */
+
+/**
+ * Stage 1 form
+ */
+function _menu_import_start(&$edit) {
+  if ($edit['file']) {
+    $form['file'] = array(
+      '#type' => 'value',
+      '#value' => $edit['file'],
+    );
+    $form[] = array(
+      '#type' => 'item',
+      '#title' => t('File'),
+      '#value' => $edit['filename'] .' ('. format_size($edit['file']->filesize) .')',
+    );
+  }
+  else {
+    $form['file'] = array(
+      '#type' => 'file',
+      '#title' => t('Upload file'),
+      '#size' => 48,
+      '#description' => t('File containing the data to be imported.'),
+    );
+  }
+  if ($edit['file_format'] && $edit['file_format'] != '') {
+    $file_formats = _menu_import_get_file_formats();
+    $form[] = array(
+      '#type' => 'item',
+      '#title' => t('File format'),
+      '#value' => $file_formats[$edit['file_format']],
+    );
+  }
+  else {
+    $form['file_format'] = array(
+      '#type' => 'select',
+      '#title' => t('File format'),
+      '#options' => _node_import_get_file_formats(),
+      '#default_value' => isset($edit['file_format']) ? $edit['file_format'] : '',
+    );
+  }
+  // TODO: change submit button values to defined strings
+  if ($edit['file']) {
+    $form[] = array(
+      '#type' => 'submit',
+      '#value' => t('Use a different file')
+    );
+  }
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Next (options)'),
+  );
+  $form['#attributes'] = array('enctype' => 'multipart/form-data');
+  return $form;
+}
+
+
+/**
+ * validation for Stage 1
+ */
+function _menu_import_start_validate($op, &$edit) {
+  global $base_url;
+  global $user;
+  
+  // Delete an existing file if needed.
+  if ($edit['op'] == t('Use a different file')) {
+    file_delete($edit['file']->filepath);
+    foreach (array('file', 'filename', 'file_format', 'errors') as $key) {
+      unset($edit[$key]);
+      unset($_SESSION['node_import'][$key]);
+    }
+  }
+  
+  else if ($edit['op'] == t('Next (options)')) {
+    // If there is an uploaded file, save it to
+    // drupal.menu_import.{site_url}.{uid} in the temporary directory.
+    $file = file_save_upload('file');
+    if ($file) {
+      $edit['filename'] = $file->filename;
+      // TODO: change filename prefix to defined string
+      file_move($file, 'drupal.menu_import.'. strtr($base_url, array('http://' => '', '/' => '.')) .'.'. $user->uid, 1);
+      $edit['file'] = $file;
+    }
+    if (!$edit['file']) {
+      form_set_error('file', t('You must select a file to import.'));
+      return;
+    }
+  
+    // Autodetect the fileformat if needed.
+    if ($edit['file_format'] == '') {
+      $format = _menu_import_autodetect_file_format($edit['file']->filepath);
+      if ($format == '') {
+        form_set_error('file_format', t('Could not detect the file format.'));
+        return;
+      }
+      $edit['file_format'] = $format;
+    }
+    
+    // make sure a valid format was posted
+    $formats = _menu_import_get_file_formats();
+    if (!isset($formats[$edit['file_format']])) {
+      form_set_error('file_format', t('You need to select a format from the list.'));
+      return;
+    }
+    
+    // if we've made it this far, things must be working
+    $_SESSION['menu_import_page'] = '_menu_import_options';
+    
+  }
+  
+}
+
+
+/*********************************
+ * STAGE 2: menu options
+ */
+
+/**
+ * options form
+ */
+function _menu_import_options(&$edit) {
+  $form = array();
+  $form[] = array(
+    '#type' => 'item',
+    '#title' => t('File'),
+    '#value' => $edit['filename'] .' ('. format_size($edit['file']->filesize) .') ',
+  );
+  $file_formats = _menu_import_get_file_formats();
+  $form[] = array(
+    '#type' => 'item',
+    '#title' => t('File format'),
+    '#value' => $file_formats[$edit['file_format']],
+  );
+  
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Import Options')
+  );
+  
+  $form['options']['new_menu'] = array(
+    '#type' => 'select',
+    '#title' => t('What should be done with the new menu?'),
+    '#options' => array(
+        'primary_links' => t('Add items to primary links'),
+        'create_new' => t('Create a new menu')
+    ),
+    '#default_value' => 'primary_links'
+  );
+  
+  $form['options']['new_menu_name'] = array(
+    '#type' => 'textfield',
+    '#title' => t('New menu name'),
+    '#description' => t('If a new menu should be created, what should it be named?'),
+    '#default_value' => ''
+  );
+  
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Back'),
+  );
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Next (preview)'),
+  );
+
+  return $form;
+}
+
+/**
+ * validation functions for the options form
+ */
+function _menu_import_options_validate($op, &$edit) {
+  if($edit['new_menu'] == 'create_new' && !$edit['new_menu_name']) {
+    form_set_error('new_menu_name', t('You must provide a name for the new menu if it will not be added to primary links.'));
+  }
+  
+  if ($edit['op'] == t('Back')) {
+    $_SESSION['menu_import_page'] = '_menu_import_start';
+  }
+  else if ($edit['op'] == t('Next (preview)')) {
+    $_SESSION['menu_import_page'] = '_menu_import_preview';
+  }
+  
+}
+
+
+/***********************************
+ * STAGE 3: preview menu
+ */
+
+function _menu_import_preview(&$edit) {
+  $form[] = array(
+    '#type' => 'item',
+    '#title' => t('File'),
+    '#value' => $edit['filename'] .' ('. format_size($edit['file']->filesize) .') ',
+  );
+  $file_formats = _menu_import_get_file_formats();
+  $form[] = array(
+    '#type' => 'item',
+    '#title' => t('File format'),
+    '#value' => $file_formats[$edit['file_format']],
+  );
+  
+  $menu = _menu_import_parse_menu($edit['file']->filepath, $edit['new_menu'], $edit['new_menu_name'], $edit['file_format']);
+  
+  $form['preview'] = array(
+    '#value' => theme('menu_import_parsed_menu', $menu)
+  );
+  
+  $form['generated_menu'] = array(
+    '#type' => 'hidden',
+    '#value' => serialize($menu)
+  );
+  
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Back'),
+  );
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Next (create)'),
+  );
+  
+  return $form;
+}
+
+
+function _menu_import_preview_validate($op, &$edit) {
+  if($edit['op'] == t('Back')) {
+    $_SESSION['menu_import_page'] = '_menu_import_options';
+  }
+  else {
+    $_SESSION['menu_import_page'] = '_menu_import_import';
+  }
+}
+
+
+/*******************************
+ * STAGE 4: create menu
+ */
+function _menu_import_import(&$edit) {
+  
+  $menu = (array) unserialize($edit['generated_menu']);
+  
+  // if menu should be attached to primary links, get primary links info
+  if($menu[0]['title'] == 'primary_links') {
+    $result = db_fetch_object(db_query('SELECT mid, pid, path, weight, title, description, type FROM {menu} WHERE title="Primary links"'));
+    $menu[0]['mid'] = $result->mid;
+    $menu[0]['title'] = $result->title;
+    $menu[0]['pid'] = $result->pid;
+    $menu[0]['path'] = $result->path;
+    $menu[0]['weight'] = $result->weight;
+    $menu[0]['description'] = $result->description;
+    $menu[0]['type'] = $result->type;
+  }
+  
+  // recursively create the menu
+  _menu_import_save_item_recursive($menu, 0);
+  
+  
+  $form['preview'] = array(
+    '#value' => theme('menu_import_parsed_menu', $menu)
+  );
+  
+  $form[] = array(
+    '#type' => 'submit',
+    '#value' => t('Done')
+  );
+  
+  return $form;
+}
+
+/**
+ * final step validation: delete the uploaded CSV file and rest the wizard
+ */
+function _menu_import_import_validate($op, &$edit) {
+  if (file_delete($edit['file']->filepath)) {
+    drupal_set_message(t('Deleted the file from the server.'));
+  }
+  $edit = array();
+  $_SESSION['menu_import_page'] = '_menu_import_start';
+}
+
+
+
+
+/********************************
+ * helper functions
+ */
+
+
+/**
+ * recursively import the menu items
+ */
+function _menu_import_save_item_recursive(&$menu, $index) {
+  // if the mid is not set, then the item has not yet been created
+  if(!isset($menu[$index]['mid'])) {
+    // set menu pid
+    if(isset($menu[$index]['parent']) && isset($menu[$menu[$index]['parent']]['mid'])) {
+      // if the parent's mid is set, then set this item's pid
+      $menu[$index]['pid'] = $menu[$menu[$index]['parent']]['mid'];
+      $menu[$index]['type'] = MENU_CUSTOM_ITEM;
+    }
+    else {
+      // otherwise this item is the parent menu item
+      $menu[$index]['pid'] = 0;
+      $menu[$index]['type'] = MENU_CUSTOM_MENU;
+    }
+  }
+  $menu[$index]['description'] = '';
+  
+  watchdog('debug', t('Saving menu item !menu', array('!menu' => print_r($menu[$index], TRUE))));
+  $menu[$index]['mid'] = menu_edit_item_save($menu[$index]);
+  watchdog('debug',t('Menu item is now !menu', array('!menu' => print_r($menu[$index], TRUE))));
+  
+  foreach($menu[$index]['children'] as $child_index) {
+    _menu_import_save_item_recursive($menu, $child_index);
+  }
+}
+
+
+/**
+ * renders the menu
+ */
+function theme_menu_import_parsed_menu($menu) {
+  
+  $rows = array();
+  $depth = 0;
+  foreach($menu[0]['children'] as $index) {
+    $new_rows = _menu_import_row_recurse($menu, $index, $depth);
+    foreach($new_rows as $row) {
+      $rows[] = $row;
+    }
+  }
+  
+  return theme(
+    'table', 
+    array(t('Menu Item'), t('Node exists'), t('Path'), t('Weight')), 
+    $rows, 
+    array(), 
+    $menu[0]['title']
+  );
+}
+
+/**
+ * recursive function for theming a menu item and its children
+ */
+function _menu_import_row_recurse($menu, $index, $depth) {
+  $rows = array();
+  
+  $title = '';
+  for($i = 0; $i < $depth; $i++) {
+    $title .= '-';
+  }
+  $title .= $menu[$index]['title'];
+  
+  $node = $menu[$index]['nid'] ? t('Yes') : t('No');
+  $path = $menu[$index]['path'] ? $menu[$index]['path'] : ' - ';
+  $weight = $menu[$index]['weight'];
+  
+  $rows[] = array(
+    'data' => array(
+        array('data' => $title, 'class' => 'menu-enabled'),
+        array('data' => $node, 'class' => 'menu-enabled'),
+        array('data' => $path, 'class' => 'menu-enabled'),
+        array('data' => $weight, 'class' => 'menu-enabled')
+    )
+  );
+  
+  
+  foreach($menu[$index]['children'] as $child) {
+    $new_rows = _menu_import_row_recurse($menu, $child, ($depth + 1));
+    foreach($new_rows as $row) {
+      $rows[] = $row;
+    }
+  }
+  return $rows;
+}
+
+
+/**
+ * The main parser function.  Reads through the file and constructs the menu
+ * 
+ * @param string $filepath
+ *  full path to the uploaded file
+ * @param string $new_menu
+ *  either 'primary_links' meaning menu items should be added to primary links or 'create_new' meaning a new menu should be created
+ * @param string $menu_name
+ *  if $new_menu == 'create_new', this is the name of the new menu
+ * @param string $get_row
+ *  name of the parsing function
+ *  
+ * @return array $menu
+ *  array structure of menu
+ */
+function _menu_import_parse_menu($filepath, $new_menu, $menu_name = '', $get_row = '_menu_import_csv_get_row') {
+  
+  // holds array representation of menu
+  $menu = array();
+  $menu['errors'] = array();
+  // key in $menu of parent menu item
+  $parent = '';
+  // current column index in file
+  $column = 0;
+  // current line being read
+  $current_line = 0;
+  
+  
+  $menu[0] = array();
+  $menu[0]['title'] = ($new_menu == 'primary_links') ? 'primary_links' : $menu_name;
+  $menu[0]['children'] = array();
+  $parent = 0;
+  
+  // keeps track of weight
+  $weight = array();
+  
+  // placeholder for the current menu item
+  $item = FALSE;
+  
+  while($row = $get_row($filepath)) {
+
+    $current_line++;
+
+    $menu[$current_line] = array(
+        'title' => NULL,
+        'children' => array(),
+        'parent' => NULL, 
+        'nid' => FALSE,
+        'path' => FALSE,
+        'weight' => 0
+    );
+
+    // find the column of the current row that contains the item
+    $index = 0;
+    foreach($row as $col) {
+      if($col != '') {
+        break;
+      }
+      $index++;
+    }
+    // if this is on the same level as the previous item, add it
+    // to the parent's array of children
+    if($index == $column) {
+      if(isset($weight[$index])) {
+        $weight[$index]++;
+      }
+      else {
+        $weight[$index] = 0;
+      }
+    }
+    // if this is on a sub-level, then make the previous item the parent
+    elseif ($index > $column) {
+      // make sure this item is only 1 level below the last item
+      if($index > $column + 1) {
+        $menu['errors'][] = $current_line;
+        continue;
+      }
+      $parent = ($current_line - 1);
+      $column = $index;
+      $weight[$index] = 0;
+    }
+    // if this is on a higher level, iterate up the tree until the
+    // correct level is found
+    elseif ($index < $column) {
+      while($index < $column) {
+        $parent = $menu[$parent]['parent'];
+        $column--;
+      }
+      $weight[$index]++;
+    }
+    
+    $menu[$current_line]['title'] = $row[$index];
+    
+    // look up node info for this menu item
+    $node = node_load(array('title' => $menu[$current_line]['title']));
+    if($node) {
+      $menu[$current_line]['nid'] = $node->nid;
+      $menu[$current_line]['path'] = drupal_get_path_alias('node/' . $node->nid);
+    }
+    
+    $menu[$current_line]['parent'] = $parent;
+    $menu[$parent]['children'][] = $current_line;
+    $menu[$current_line]['weight'] = $weight[$index];
+    
+  }
+  
+  return $menu;
+}
+
+
+/**
+ * auto-detect file format by running all possible parsing functions
+ */
+function _menu_import_autodetect_file_format($file) {
+  $format = '';
+  foreach (_menu_import_get_file_formats() as $function => $title) {
+    if (function_exists($function)) {
+      $row = $function($file, TRUE);
+      if (count($row) > 1) {
+        $format = $function;
+        break;
+      }
+    }
+  }
+  return $format;
+}
+
+/**
+ * return array of file formats and their associated parsing functions
+ */
+function _menu_import_get_file_formats() {
+  return array(
+    '' => t('Autodetect'),
+    '_menu_import_tsv_get_row' => t('Tab Separated Values (TSV) text file'),
+    '_menu_import_csv_get_row' => t('Comma Separated Values (CSV) text file'),
+  );
+}
+
+/**
+ * read a line from TSV file
+ */
+function _menu_import_tsv_get_row($filepath, $reset = FALSE) {
+  static $lines;
+  static $line_no;
+  $separator = variable_get('menu_import_tsv_separator', "\t");
+
+  if ($filepath == '') {
+    unset($lines);
+    return FALSE;
+  }
+
+  if (!isset($lines) || $reset) {
+    $line_no = 0;
+    $lines = file($filepath);
+  }
+
+  while ($line_no < count($lines)) {
+    $line = rtrim($lines[$line_no], "\n\r ");
+    $line_no++;
+    if ($line != '') {
+      return explode($separator, $line);
+    }
+  }
+  return FALSE;
+}
+
+/**
+ * read a line from CSV file
+ */
+function _menu_import_csv_get_row($filepath, $reset = FALSE) {
+  static $handle;
+
+  if ($filepath == '') {
+    unset($handle);
+    return FALSE;
+  }
+
+  if (!isset($handle) || $reset) {
+    if (isset($handle)) {
+      fclose($handle);
+    }
+    $handle = fopen($filepath, 'r');
+  }
+
+  $length = variable_get('menu_import_csv_size', 10000);
+  $delimiter = variable_get('menu_import_csv_separator', ',');
+  $qualifier = variable_get('menu_import_csv_qualifier', '"');
+  
+  return fgetcsv($handle, $length, $delimiter, $qualifier);
+}
