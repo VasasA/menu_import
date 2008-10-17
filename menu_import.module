@@ -150,7 +150,7 @@ function _menu_import_start(&$edit) {
     $form['file_format'] = array(
       '#type' => 'select',
       '#title' => t('File format'),
-      '#options' => _node_import_get_file_formats(),
+      '#options' => _menu_import_get_file_formats(),
       '#default_value' => isset($edit['file_format']) ? $edit['file_format'] : '',
     );
   }
@@ -182,7 +182,7 @@ function _menu_import_start_validate($op, &$edit) {
     file_delete($edit['file']->filepath);
     foreach (array('file', 'filename', 'file_format', 'errors') as $key) {
       unset($edit[$key]);
-      unset($_SESSION['node_import'][$key]);
+      unset($_SESSION['menu_import'][$key]);
     }
   }
   
