@@ -1,5 +1,7 @@
-; $Id$
-name = "Menu Import"
-description = "Import menu hierarchy from CSV or TSV file"
-package = "Development"
-dependencies = menu
+; $Id
+name = Menu import
+description = Import menu hierarchy from an indented text file.
+package = Development
+core = 6.x
+version = 6.x-1.2
+dependencies[] = menu

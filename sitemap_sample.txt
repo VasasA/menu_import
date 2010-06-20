@@ -1,0 +1,22 @@
+$Id
+
+Menu structure must follow this example:
+
+Page1
+- Page2
+- Page3
+Page4
+- Page5
+-- Page6
+
+or this
+
+Page1
+* Page2
+** Page3
+Page4
+* Page5
+** Page6
+*** Page7
+
+Space(s) between indentation symbol "*" or "-" and menu/node title are optional.
