@@ -67,7 +67,9 @@ function menu_import_preview_import(&$form_state) {
 
         // Step 1 - upload menu for preview
         case 1:
-
+            /*
+             * Menu options.
+             */
             $form['target_menu'] = array(
                 '#type' => 'select',
                 '#title' => t('Menu to import in'),
@@ -82,22 +84,60 @@ function menu_import_preview_import(&$form_state) {
                 '#description' => t('Menu containing specially indented text file.'),
             );
 
+            $node_types = node_get_types();
+            foreach ($node_types as $type => $type_info) {
+                    $node_opts[$type] = $type_info->name;
+            }
+
+            /*
+             * Node options.
+             */
+            $elementTitle   = t('Node type');
+            $elementDesc    = t('Type of the newly created nodes.');
+            if (count($node_opts) > 1) {
+                $form['node_type'] = array(
+                    '#type' => 'select',
+                    '#title' => $elementTitle,
+                    '#options' => $node_opts,
+                    '#description' => $elementDesc,
+                    '#required' => TRUE
+                );
+            }
+            elseif (count($node_opts) == 1) {
+                $form['node_type'] = array(
+                    '#type' => 'value',
+                    '#value' => array_pop(array_keys($node_opts)),
+                );
+
+                $form['node_type_name'] = array(
+                    '#type' => 'item',
+                    '#title' => $elementTitle,
+                    '#value' => array_pop($node_opts),
+                    '#description' => $elementDesc,
+                );
+            }
+            else {
+                drupal_set_message(t('No content types were found, import is not possible.'), 'error', false);
+            }
+
             $langs = language_list();
             foreach ($langs as $key => $lang_info) {
                 if ($lang_info->enabled)
                     $lang_opts[$key] = $lang_info->native;
             }
 
+            $elementTitle   = t('Language');
+            $elementDesc    = t('Language of the newly created pages.');
             if (count($lang_opts) > 1) {
                 $form['target_lang'] = array(
                     '#type' => 'select',
-                    '#title' => t('Language'),
+                    '#title' => $elementTitle,
                     '#options' => $lang_opts,
-                    '#description' => t('Language of the newly created pages.'),
+                    '#description' => $elementDesc,
                     '#required' => TRUE
                 );
             }
-            else {
+            elseif (count($lang_opts) == 1) {
                 $form['target_lang'] = array(
                     '#type' => 'value',
                     '#value' => array_pop(array_keys($lang_opts)),
@@ -105,9 +145,9 @@ function menu_import_preview_import(&$form_state) {
 
                 $form['target_lang_name'] = array(
                     '#type' => 'item',
-                    '#title' => t('Language'),
+                    '#title' => $elementTitle,
                     '#value' => array_pop($lang_opts),
-                    '#description' => t('Language of the newly created nodes.'),
+                    '#description' => $elementDesc,
                 );
             }
 
@@ -193,6 +233,10 @@ function menu_import_preview_import(&$form_state) {
 function menu_import_preview_import_validate($form_id, &$form_state) {
     // Step 1 validation
     if ($form_state['storage']['step'] == 1) {
+        if (!isset($form_state['values']['node_type'])) {
+            drupal_goto('admin/build/menu/import');
+        }
+        
         $validators = array(
           'file_validate_extensions' => array('txt')
         );
@@ -210,7 +254,7 @@ function menu_import_preview_import_validate($form_id, &$form_state) {
  * Menu preview/import form submit handler.
  */
 function menu_import_preview_import_submit($form_id, &$form_state) {
-    global $mi_target_lang, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes;
+    global $mi_target_lang, $mi_node_type, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes;
     
     // Step 1
     if ($form_state['storage']['step'] == 1) {
@@ -223,10 +267,11 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
                 drupal_set_message($error, 'warning');
         }
 
-        $form_state['storage']['target_menu'] = $form_state['values']['target_menu'];
-        $form_state['storage']['target_lang'] = $form_state['values']['target_lang'];
-        $form_state['storage']['node_options']= $form_state['values']['node_options'];
-        $form_state['storage']['step'] = 2;
+        $form_state['storage']['target_menu']   = $form_state['values']['target_menu'];
+        $form_state['storage']['target_lang']   = $form_state['values']['target_lang'];
+        $form_state['storage']['node_type']     = $form_state['values']['node_type'];
+        $form_state['storage']['node_options']  = $form_state['values']['node_options'];
+        $form_state['storage']['step']          = 2;
     }
     // Step 2
     else {
@@ -246,10 +291,11 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
             drupal_set_message(t('Items deleted: @items.', array('@items' => $deleted)));
         }
 
-        $mi_target_lang = $form_state['storage']['target_lang'];
-        $mi_map_nodes   = $form_state['storage']['node_options'];
-        $mi_new_nodes = 0;
-        $mi_matched_nodes = 0;
+        $mi_target_lang     = $form_state['storage']['target_lang'];
+        $mi_map_nodes       = $form_state['storage']['node_options'];
+        $mi_node_type       = $form_state['storage']['node_type'];
+        $mi_new_nodes       = 0;
+        $mi_matched_nodes   = 0;
         
         _menu_import_save_item_recursive($form_state['storage']['menu'], 0);
 
@@ -390,7 +436,7 @@ function _menu_import_parse_menu($filepath, $menu_name) {
  * Recursively import the menu items.
  */
 function _menu_import_save_item_recursive(&$menu, $index) {
-    global $mi_target_lang, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes;
+    global $mi_target_lang, $mi_node_type, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes;
     
     // Ignore root item ($index == 0)
     if ($index) {
@@ -423,7 +469,7 @@ function _menu_import_save_item_recursive(&$menu, $index) {
         if ($create_node){
             $node->title = $menu[$index]['link_title'];
             $node->uid = 1;
-            $node->type = 'page';
+            $node->type = $mi_node_type;
             $node->body = '';
             $node->status = 1;
             $node->language = $mi_target_lang;
