@@ -377,7 +377,7 @@ function _menu_import_parse_menu($filepath, $menu_name, $node_search_alias) {
         $line = trim($line);
         // Only * and - are allowed as indentation characters
         // URL aliases are separated from title by vertical bar or semi-colon
-        preg_match('/^([\-]+|[\*]+)?(\s+)?(.*)([\|;]){1}?(.*)?/', $line, $matches);
+        preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)([\|;]{1})?([\|;]*)?/', $line, $matches);
 
         $level = strlen($matches[1]);
         $title = strip_tags($matches[3]);
@@ -391,8 +391,8 @@ function _menu_import_parse_menu($filepath, $menu_name, $node_search_alias) {
 
         // if this is on the same level as the previous item, add it
         // to the parent's array of children
-        if($level == $column) {
-            if(isset($weight[$level])) {
+        if ($level == $column) {
+            if (isset($weight[$level])) {
                 $weight[$level]++;
             }
             else {
