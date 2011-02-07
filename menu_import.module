@@ -32,7 +32,7 @@ function menu_import_menu() {
     $items = array();
 
     $items['admin/build/menu/import'] = array(
-        'title' => t('Import menu'),
+        'title' => 'Import menu',
         'page callback' => 'drupal_get_form',
         'page arguments' => array('menu_import_preview_import'),
         'type' => MENU_LOCAL_TASK,
@@ -160,11 +160,18 @@ function menu_import_preview_import(&$form_state) {
                     t('Link to existing and create empty nodes'),
                     t('Remove existing and create empty nodes'),
                     ),
-                '#description'   => t('Link to existing nodes: link menu items to existing nodes (search for nodes by title)')
+                '#description'   => t('Link to existing nodes: link menu items to existing nodes (see the search options below)')
                         . '<br/>' . t('Link to existing and create empty nodes: not found nodes will be created as stubs')
                         . '<br/>' . t('Remove existing and create empty nodes: existent menu items and associated nodes will be deleted, not found nodes will be created as stubs')
             );
             
+            $form['node_search_alias'] = array(
+                '#type'         => 'checkbox',
+                '#title'        => t('Search nodes by path alias'),
+                //'#default_value' => 0,
+                '#description'  => t('Existing nodes will be searched by path alias, if not found then by title')
+            );
+
             $form['file'] = array(
                 '#type' => 'value',
                 '#name' => 'file',
@@ -260,7 +267,7 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
     if ($form_state['storage']['step'] == 1) {
 
         $file =  $form_state['values']['file'];
-        $form_state['storage']['menu'] = _menu_import_parse_menu($file->filepath, $form_state['values']['target_menu']);
+        $form_state['storage']['menu'] = _menu_import_parse_menu($file->filepath, $form_state['values']['target_menu'], $form_state['values']['node_search_alias']);
 
         if ($form_state['storage']['menu']['errors']) {
             foreach ($form_state['storage']['menu']['errors'] as $error)
@@ -324,16 +331,16 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
  * @return array $menu
  *  array structure of menu
  */
-function _menu_import_parse_menu($filepath, $menu_name) {
-
-    // holds array representation of menu
+function _menu_import_parse_menu($filepath, $menu_name, $node_search_alias) {
+    
+    // Holds array representation of menu
     $menu = array();
     $menu['errors'] = array();
-    // key in $menu of parent menu item
+    // Key in $menu of parent menu item
     $parent = '';
-    // current column index in file
+    // Current column index in file
     $column = 0;
-    // current line being read
+    // Current line being read
     $current_line = 0;
 
     $menu[0] = array();
@@ -369,17 +376,19 @@ function _menu_import_parse_menu($filepath, $menu_name) {
 
         $line = trim($line);
         // Only * and - are allowed as indentation characters
-        preg_match('/^([\-]+|[\*]+)?(\s+)?(.*)/', $line, $matches);
+        // URL aliases are separated from title by vertical bar or semi-colon
+        preg_match('/^([\-]+|[\*]+)?(\s+)?(.*)([\|;]){1}?(.*)?/', $line, $matches);
 
         $level = strlen($matches[1]);
         $title = strip_tags($matches[3]);
+        $url   = $matches[5];
 
         // Skip empty items
         if (!strlen($title)) {
             $menu['errors'][] = t('Invalid item at line @current_line: missing title.', array('@current_line' => $current_line));
             continue;
         }
-        
+
         // if this is on the same level as the previous item, add it
         // to the parent's array of children
         if($level == $column) {
@@ -413,9 +422,21 @@ function _menu_import_parse_menu($filepath, $menu_name) {
 
         $menu[$current_line]['link_title'] = $title;
 
-        // look up node info for this menu item
-        $node = node_load(array('title' => $menu[$current_line]['link_title']));
-        if($node) {
+        $node = NULL;
+        if ($node_search_alias && $url) {
+            // @todo: add language support
+            $node_src = drupal_lookup_path('source', $url);
+            if ($node_src !== FALSE) {
+                $node_src_id = substr($node_src, 5); // strip "node/"
+                $node = node_load($node_src_id);
+            }
+        }
+
+        if (!$node) {
+            $node = node_load(array('title' => $menu[$current_line]['link_title']));
+        }
+        
+        if ($node) {
             $menu[$current_line]['nid'] = $node->nid;
             $menu[$current_line]['path'] = drupal_get_path_alias('node/' . $node->nid);
         }
@@ -442,10 +463,12 @@ function _menu_import_save_item_recursive(&$menu, $index) {
     if ($index) {
         if ($mi_map_nodes == MI_NODE_LINK || $mi_map_nodes == MI_NODE_LINK_CREATE) {
             if (!$menu[$index]['nid']) {
-                if ($mi_map_nodes == MI_NODE_LINK)
+                if ($mi_map_nodes == MI_NODE_LINK) {
                     return;
-                else
+                }
+                else {
                     $create_node = TRUE;
+                }
             }
             // Update existing menu item referencing this node by recreating it
             else {
@@ -480,15 +503,15 @@ function _menu_import_save_item_recursive(&$menu, $index) {
             $node->nid = $menu[$index]['nid'];
         }
 
-        // if the mid is not set, then the item has not yet been created
-        if(!isset($menu[$index]['mlid'])) {
-            // set menu pid
-            if(isset($menu[$index]['parent']) && isset($menu[$menu[$index]['parent']]['mlid'])) {
-                // if the parent's mid is set, then set this item's pid
+        // If the mid is not set, then the item has not yet been created
+        if (!isset($menu[$index]['mlid'])) {
+            // Set menu pid
+            if (isset($menu[$index]['parent']) && isset($menu[$menu[$index]['parent']]['mlid'])) {
+                // If the parent's mid is set, then set this item's pid
                 $menu[$index]['plid'] = $menu[$menu[$index]['parent']]['mlid'];
             }
             else {
-                // otherwise this item is the parent menu item
+                // Otherwise this item is the parent menu item
                 $menu[$index]['plid'] = 0;
             }
         }

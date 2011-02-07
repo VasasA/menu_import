@@ -10,3 +10,6 @@ Usage instructions:
 6. Submit and see the new menu structure with stub nodes created automatically.
 7. Enjoy your saved time ;)
 
+Features:
+TO BE DOCUMENTED...
+
