@@ -261,7 +261,7 @@ function menu_import_preview_import_validate($form_id, &$form_state) {
  * Menu preview/import form submit handler.
  */
 function menu_import_preview_import_submit($form_id, &$form_state) {
-    global $mi_target_lang, $mi_node_type, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes;
+    global $mi_target_lang, $mi_node_type, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes, $mi_external_links;
     
     // Step 1
     if ($form_state['storage']['step'] == 1) {
@@ -270,10 +270,11 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
         $form_state['storage']['menu'] = _menu_import_parse_menu($file->filepath, $form_state['values']['target_menu'], $form_state['values']['node_search_alias']);
 
         if ($form_state['storage']['menu']['errors']) {
-            foreach ($form_state['storage']['menu']['errors'] as $error)
+            foreach ($form_state['storage']['menu']['errors'] as $error) {
                 drupal_set_message($error, 'warning');
+                //echo $error;
+            }
         }
-
         $form_state['storage']['target_menu']   = $form_state['values']['target_menu'];
         $form_state['storage']['target_lang']   = $form_state['values']['target_lang'];
         $form_state['storage']['node_type']     = $form_state['values']['node_type'];
@@ -303,10 +304,11 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
         $mi_node_type       = $form_state['storage']['node_type'];
         $mi_new_nodes       = 0;
         $mi_matched_nodes   = 0;
+        $mi_external_links  = 0;
         
         _menu_import_save_item_recursive($form_state['storage']['menu'], 0);
 
-        $total_items = $mi_new_nodes + $mi_matched_nodes;
+        $total_items = $mi_new_nodes + $mi_matched_nodes + $mi_external_links;
         drupal_set_message(t('Items imported: @items.', array('@items' => $total_items)));
 
         if ($mi_new_nodes)
@@ -314,6 +316,9 @@ function menu_import_preview_import_submit($form_id, &$form_state) {
 
         if ($mi_matched_nodes)
             drupal_set_message(t('Existing nodes matched: @items.', array('@items' => $mi_matched_nodes)));
+
+        if ($mi_external_links)
+            drupal_set_message(t('External URLs created: @items.', array('@items' => $mi_external_links)));
 
         $form_state['storage'] = array();
         $form_state['redirect'] = 'admin/build/menu/import';
@@ -371,13 +376,14 @@ function _menu_import_parse_menu($filepath, $menu_name, $node_search_alias) {
             'parent' => NULL,
             'nid' => FALSE,
             'path' => FALSE,
-            'weight' => 0
+            'weight' => 0,
+            'external' => FALSE
         );
 
         $line = trim($line);
         // Only * and - are allowed as indentation characters
         // URL aliases are separated from title by vertical bar or semi-colon
-        preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)([\|;]{1})?([\|;]*)?/', $line, $matches);
+        preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)([\|;]{1})?([^\|;]*)?/', $line, $matches);
 
         $level = strlen($matches[1]);
         $title = strip_tags($matches[3]);
@@ -422,21 +428,35 @@ function _menu_import_parse_menu($filepath, $menu_name, $node_search_alias) {
 
         $menu[$current_line]['link_title'] = $title;
 
-        $node = NULL;
-        if ($node_search_alias && $url) {
-            // @todo: add language support
-            $node_src = drupal_lookup_path('source', $url);
-            if ($node_src !== FALSE) {
-                $node_src_id = substr($node_src, 5); // strip "node/"
-                $node = node_load($node_src_id);
+        $node       = NULL;
+        $skip_node  = FALSE;
+        
+        if ($url) {
+            if ($node_search_alias) {
+                // @todo: add language support
+                $node_src = drupal_lookup_path('source', $url);
+                if ($node_src !== FALSE) {
+                    $node_src_id = substr($node_src, 5); // strip "node/"
+                    $node = node_load($node_src_id);
+                }
+            }
+            
+            // Not found because of external URL
+            if (!$node) {
+                $url = trim($url);
+                if (stripos($url, 'http://') === 0) {
+                     $menu[$current_line]['external']   = TRUE;
+                     $menu[$current_line]['path']       = strtolower(strip_tags($url));
+                     $skip_node  = TRUE;
+                }
             }
         }
 
-        if (!$node) {
+        if (!$node && !$skip_node) {
             $node = node_load(array('title' => $menu[$current_line]['link_title']));
         }
         
-        if ($node) {
+        if (is_object($node)) {
             $menu[$current_line]['nid'] = $node->nid;
             $menu[$current_line]['path'] = drupal_get_path_alias('node/' . $node->nid);
         }
@@ -457,52 +477,57 @@ function _menu_import_parse_menu($filepath, $menu_name, $node_search_alias) {
  * Recursively import the menu items.
  */
 function _menu_import_save_item_recursive(&$menu, $index) {
-    global $mi_target_lang, $mi_node_type, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes;
+    global $mi_target_lang, $mi_node_type, $mi_map_nodes, $mi_new_nodes, $mi_matched_nodes, $mi_external_links;
     
     // Ignore root item ($index == 0)
     if ($index) {
-        if ($mi_map_nodes == MI_NODE_LINK || $mi_map_nodes == MI_NODE_LINK_CREATE) {
-            if (!$menu[$index]['nid']) {
-                if ($mi_map_nodes == MI_NODE_LINK) {
-                    return;
+        if ($menu[$index]['external']) {
+            $mi_external_links++;
+        }
+        else {
+            if ($mi_map_nodes == MI_NODE_LINK || $mi_map_nodes == MI_NODE_LINK_CREATE) {
+                if (!$menu[$index]['nid']) {
+                    if ($mi_map_nodes == MI_NODE_LINK) {
+                        return;
+                    }
+                    else {
+                        $create_node = TRUE;
+                    }
                 }
+                // Update existing menu item referencing this node by recreating it
                 else {
-                    $create_node = TRUE;
+                    $create_node = FALSE;
+                    $menu_item = db_fetch_object(db_query(
+                            "SELECT mlid
+                                FROM {menu_links}
+                                WHERE menu_name='%s' AND link_path='%s'",
+                                $menu[0]['title'], 'node/' . $menu[$index]['nid']));
+                    if ($menu_item)
+                        menu_link_delete($menu_item->mlid);
+
+                    $mi_matched_nodes++;
                 }
             }
-            // Update existing menu item referencing this node by recreating it
             else {
-                $create_node = FALSE;
-                $menu_item = db_fetch_object(db_query(
-                        "SELECT mlid
-                            FROM {menu_links}
-                            WHERE menu_name='%s' AND link_path='%s'",
-                            $menu[0]['title'], 'node/' . $menu[$index]['nid']));
-                if ($menu_item)
-                    menu_link_delete($menu_item->mlid);
+                $create_node = TRUE;
+            }
 
-                $mi_matched_nodes++;
+            $node = new stdClass();
+            if ($create_node){
+                $node->title = $menu[$index]['link_title'];
+                $node->uid = 1;
+                $node->type = $mi_node_type;
+                $node->body = '';
+                $node->status = 1;
+                $node->language = $mi_target_lang;
+                node_save($node);
+                $mi_new_nodes++;
+            }
+            else {
+                $node->nid = $menu[$index]['nid'];
             }
         }
-        else {
-            $create_node = TRUE;
-        }
-
-        $node = new stdClass();
-        if ($create_node){
-            $node->title = $menu[$index]['link_title'];
-            $node->uid = 1;
-            $node->type = $mi_node_type;
-            $node->body = '';
-            $node->status = 1;
-            $node->language = $mi_target_lang;
-            node_save($node);
-            $mi_new_nodes++;
-        }
-        else {
-            $node->nid = $menu[$index]['nid'];
-        }
-
+        
         // If the mid is not set, then the item has not yet been created
         if (!isset($menu[$index]['mlid'])) {
             // Set menu pid
@@ -518,11 +543,15 @@ function _menu_import_save_item_recursive(&$menu, $index) {
 
         $menu[$index]['description'] = '';
         $menu[$index]['menu_name'] = $menu[0]['title'];
-        $menu[$index]['link_path'] = 'node/' . $node->nid;
 
-        watchdog('debug', t('Saving menu item !menu', array('!menu' => print_r($menu[$index], TRUE))));
+        if ($menu[$index]['external']) {
+            $menu[$index]['link_path'] = $menu[$index]['path'];
+        }
+        else {
+            $menu[$index]['link_path'] = 'node/' . $node->nid;
+        }
+
         $menu[$index]['mlid'] = menu_link_save($menu[$index]);
-        watchdog('debug',t('Menu item is now !menu', array('!menu' => print_r($menu[$index], TRUE))));
     }
 
     foreach($menu[$index]['children'] as $child_index) {
@@ -592,7 +621,6 @@ function _menu_import_row_recurse($menu, $index, $depth) {
             array('data' => $weight, 'class' => 'menu-enabled')
         )
     );
-
 
     foreach($menu[$index]['children'] as $child) {
         $new_rows = _menu_import_row_recurse($menu, $child, ($depth + 1));
