@@ -15,7 +15,7 @@ You need it when you want to:
   to be available.
 
 3. Update an existing menu by adding new items. You may add new items the same way as described
-in points 1 and 2 above.
+  in points 1 and 2 above.
 
 
 USAGE INSTRUCTIONS:
@@ -43,7 +43,7 @@ USAGE INSTRUCTIONS:
   ** Page6
   *** Page7
 
-  Also, you may optionally specify path alias (alternative path provided by path module)
+  Also, you may optionally specify path alias (alternative path)
   or external URL. Writing it after node's title, separating by semicolon or vertical bar:
   External URLs should ALWAYS start with "http://".
 
@@ -68,6 +68,3 @@ USAGE INSTRUCTIONS:
 6. Submit and see the new menu structure with stub nodes created automatically.
 
 7. Enjoy your saved time ;)
-
-FEATURES:
-1. Quickly create your site's menus using an easy to understand text format.

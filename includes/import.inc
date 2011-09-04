@@ -8,11 +8,15 @@
 /**
  * Helper function to find node associated to path.
  *
- * @param $path path (node/* or any other) as described in the input file
- * @param $title node's title as described in the input file
- * @param $options array import options provided
+ * @param $path
+ *   Path (node/* or any other) as described in the input file.
+ * @param $title
+ *   Node's title as described in the input file.
+ * @param $options
+ *   Array import options provided.
  *
- * @return an array('nid' => '<node_id_or_false>', 'link_path' => '<path_if_exists_or_empty>')
+ * @return
+ *   An array('nid' => '<node_id_or_false>', 'link_path' => '<path_if_exists_or_empty>').
  */
 function _menu_import_lookup_path($path, $title, array $options) {
   $nid = $result['nid'] = $is_node = FALSE;
@@ -34,7 +38,7 @@ function _menu_import_lookup_path($path, $title, array $options) {
   }
 
   // Search node by title if nothing found.
-  if (!$nid && $options['search_title']) {
+  if (!$nid) {
     $nid = db_select('node', 'n')
       ->fields('n', array('nid'))
       ->condition('n.title', $title)
@@ -45,7 +49,7 @@ function _menu_import_lookup_path($path, $title, array $options) {
   // The menu item links to a node.
   if ($nid || $is_node) {
     $system_url = 'node/' . $nid;
-    if (drupal_valid_path($system_url)) {
+    if (drupal_valid_path($system_url) && $options['link_to_content']) {
       // The node exists and we can safely link to it.
       $result['link_path'] = $system_url;
       $result['nid'] = $nid;
@@ -69,6 +73,20 @@ function _menu_import_lookup_path($path, $title, array $options) {
 
 /**
  * Parse a line of text containing the menu structure.
+ *
+ * @param $line
+ *   One line from input file.
+ * @param $prev_level
+ *   Previous level to build ierarchy.
+ * @param $weights
+ *   Array of menu items' weights.
+ * @param $parents
+ *   Array of menu items' parents.
+ * @param $options
+ *   Array of importing options.
+ *
+ * @return
+ *   Array representing a menu item.
  */
 function menu_import_parse_line($line, $prev_level, array $weights, array $parents, array $options) {
   $menuitem = array(
@@ -137,16 +155,16 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
  * File parser function. Reads through the text file and constructs the menu.
  *
  * @param $uri
- *   uri of the uploaded file
+ *   uri of the uploaded file.
  * @param $menu_name
- *   internal name of existiong menu
+ *   internal name of existiong menu.
  * @param $options
  *   An associative array of search options.
- *   - search_title: search node by title
- *   - node_language: language to use
+ *   - search_title: search node by title.
+ *   - node_language: language to use.
  *
  * @return array
- *   array structure of menu
+ *   array structure of menu.
  */
 function menu_import_parse_menu_from_file($uri, $menu_name, array $options) {
   $menu = array(
@@ -203,9 +221,9 @@ function menu_import_parse_menu_from_file($uri, $menu_name, array $options) {
  * Text parser function. Reads through the text and constructs the menu.
  *
  * @param $text
- *   text containing the menu structure
+ *   Text containing the menu structure.
  *
- * @see menu_import_parse_menu_from_file().
+ * @see menu_import_parse_menu_from_file()
  */
 function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
   $menu = array(
@@ -258,20 +276,23 @@ function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
  *   An associative array containing the menu structure.
  * @param $options
  *   An associative array of import options.
- *   - node_attach: how to attach the node (see MI_NODE_* constants)
+ *   - link_to_content: look for existing nodes and link to them
+ *   - create_content: create new content (also if link_to_content not set)
  *   - node_type: node type
  *   - node_language: node language
  *   - node_status: node status
+ *
+ * @return
+ *   Array of different statistics accumulated during the import.
  */
 function menu_import_save_menu($menu, $options) {
   $nodes_deleted_cnt = $unknown_links_cnt = $external_links_cnt = 0;
   $nodes_matched_cnt = $nodes_new_cnt = $failed_cnt = 0;
 
-  // Delete existing content and menu.
-  // @todo: deletion is dangerous, think of better protection.
+  // Delete existing menu items.
   $menu_name = $menu[0]['menu_name'];
-  if ($options['node_attach'] == MI_NODE_RECREATE) {
-    $nodes_deleted_cnt = menu_import_delete_menuitems_and_nodes($menu_name);
+  if ($options['remove_menu_items']) {
+    $nodes_deleted_cnt = menu_import_delete_menuitems($menu_name);
   }
 
   $menu[0]['mlid'] = 0;
@@ -297,35 +318,29 @@ function menu_import_save_menu($menu, $options) {
       }
       // Handle links to nodes or missing links.
       else {
-        $link_found = FALSE;
         // Node exists.
         if ($menuitem['nid']) {
-          // Update menu item, do not touch existing node.
-          if ($options['node_attach'] == MI_NODE_LINK || $options['node_attach'] == MI_NODE_LINK_CREATE) {
-            menu_import_delete_menuitem($menuitem);
-            $nodes_matched_cnt++;
-            $menuitem['link_path'] = 'node/' . $menuitem['nid'];
-          }
-          // Create new link and node.
-          elseif ($options['node_attach'] == MI_NODE_RECREATE) {
-            menu_import_delete_menuitem($menuitem);
-            $options['node_title'] = $menuitem['link_title'];
-            $nid = menu_import_create_node($options);
-            $menuitem['nid'] = $nid;
-            $nodes_new_cnt++;
-            $menuitem['link_path'] = 'node/' . $menuitem['nid'];
+          if ($options['create_content'] || $options['link_to_content']) {
+            // Need to create new content since no linking was selected.
+            if (!$options['link_to_content']) {
+              menu_import_delete_menuitem($menuitem);
+              $options['node_title'] = $menuitem['link_title'];
+              $nid = menu_import_create_node($options);
+              $menuitem['nid'] = $nid;
+              $nodes_new_cnt++;
+              $menuitem['link_path'] = 'node/' . $menuitem['nid'];
+            }
+            else {
+              menu_import_delete_menuitem($menuitem);
+              $nodes_matched_cnt++;
+              $menuitem['link_path'] = 'node/' . $menuitem['nid'];
+            }
           }
         }
         // Node doesn't exist.
         else {
-          // Update menu item.
-          if ($options['node_attach'] == MI_NODE_LINK) {// || $options['node_attach'] == MI_NODE_LINK_CREATE) {
-            menu_import_delete_menuitem($menuitem);
-            $unknown_links_cnt++;
-            $menuitem['link_path'] = '<front>';
-          }
           // Create new link and node.
-          elseif ($options['node_attach'] == MI_NODE_LINK_CREATE || $options['node_attach'] == MI_NODE_RECREATE) {
+          if ($options['create_content']) {
             menu_import_delete_menuitem($menuitem);
             $options['node_title'] = $menuitem['link_title'];
             $nid = menu_import_create_node($options);
@@ -333,15 +348,13 @@ function menu_import_save_menu($menu, $options) {
             $nodes_new_cnt++;
             $menuitem['link_path'] = 'node/' . $menuitem['nid'];
           }
+          // Recreate menu item.
+          else {
+            menu_import_delete_menuitem($menuitem);
+            $unknown_links_cnt++;
+            $menuitem['link_path'] = '<front>';
+          }
         }
-
-        // No content was found.
-//        if (!$link_found) {
-//          $unknown_links_cnt++;
-//          if (empty($menuitem['link_path'])) {
-//            $menuitem['link_path'] = '<front>';
-//          }
-//        }
       }
 
       // Save menuitem and set mlid.
@@ -358,21 +371,23 @@ function menu_import_save_menu($menu, $options) {
     'unknown_links' => $unknown_links_cnt,
     'matched_nodes' => $nodes_matched_cnt,
     'new_nodes' => $nodes_new_cnt,
-    'deleted_nodes' => $nodes_deleted_cnt,
+    'deleted_menu_items' => $nodes_deleted_cnt,
     'failed' => $failed_cnt,
   );
 }
 
 /**
- * Attach node.
+ * Create new node of given content type.
  *
- * @param $options array relevant array keys are:
+ * @param $options
+ *   Array relevant array keys are:
  *   - node_title
  *   - node_type
  *   - node_language
  *   - node_status
  *
- * @return node id
+ * @return
+ *   Node's nid field.
  */
 function menu_import_create_node($options) {
   $node = new stdClass();
@@ -390,8 +405,16 @@ function menu_import_create_node($options) {
 
 /**
  * Delete nodes attached to menu and menu items.
+ *
+ * @param $menu_name
+ *   The machine name of the menu.
+ * @param $with_nodes
+ *   Delete nodes as well. Not used, reserved for future.
+ *
+ * @return
+ *   Number of items deleted .
  */
-function menu_import_delete_menuitems_and_nodes($menu_name) {
+function menu_import_delete_menuitems($menu_name, $with_nodes = FALSE) {
   $menuitems = db_select('menu_links', 'ml')
     ->fields('ml', array('mlid', 'link_path'))
     ->condition('ml.menu_name', $menu_name)
@@ -399,22 +422,27 @@ function menu_import_delete_menuitems_and_nodes($menu_name) {
 
   $deleted_cnt = 0;
   foreach ($menuitems as $menuitem) {
-    $link = explode('/', $menuitem['link_path']);
-    // Delete nodes only
-    if ($link[0] == 'node' && is_numeric($link[1])) {
-      $nid = $link[1];
-      db_delete('node')->condition('nid', $nid)->execute();
-      db_delete('node_revision')->condition('nid', $nid)->execute();
-      $deleted_cnt++;
-    }
-    // ... and menu items
     db_delete('menu_links')->condition('mlid', $menuitem['mlid'])->execute();
+    if ($with_nodes) {
+      // Delete nodes only
+      $link = explode('/', $menuitem['link_path']);
+      if ($link[0] == 'node' && is_numeric($link[1])) {
+        $nid = $link[1];
+        db_delete('node')->condition('nid', $nid)->execute();
+        db_delete('node_revision')->condition('nid', $nid)->execute();
+      }
+    }
+    $deleted_cnt++;
   }
+  
   return $deleted_cnt;
 }
 
 /**
  * Delete menu item by nid.
+ *
+ * @param $menuitem
+ *   Array describing the menu item.
  */
 function menu_import_delete_menuitem($menuitem) {
   db_delete('menu_links')

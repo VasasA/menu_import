@@ -48,6 +48,27 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#description' => t('File containing specially indented text.'),
   );
 
+  $form['main']['create_content'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Create empty content'),
+    '#description' => t('check to create empty content.'),
+    '#default_value' => !empty($form_state['values']['create_content']) ? $form_state['values']['create_content'] : 0,
+  );
+
+  $form['main']['link_to_content'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Link to existing content'),
+    '#description' => t('check to look for existing content by path or title.'),
+    '#default_value' => !empty($form_state['values']['link_to_content']) ? $form_state['values']['link_to_content'] : 0,
+  );
+
+  $form['main']['remove_menu_items'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Remove existing menu items'),
+    '#description' => t('check to remove current menu items.'),
+    '#default_value' => !empty($form_state['values']['remove_menu_items']) ? $form_state['values']['remove_menu_items'] : 0,
+  );
+  
   $form['node'] = array(
     '#type' => 'fieldset',
     '#title' => t('Content settings'),
@@ -63,7 +84,6 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#title' => t('Content type'),
     '#options' => $node_types,
     '#description' => t('Type of the newly created content.'),
-    '#required' => TRUE,
     '#default_value' => !empty($form_state['values']['node_type']) ? $form_state['values']['node_type'] : NULL,
   );
 
@@ -92,43 +112,22 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#default_value' => !empty($form_state['values']['node_status']) ? $form_state['values']['node_status'] : 1,
   );
 
-  // Style this element differently.
-  drupal_add_css(
-    '.hint {border: 1px dashed #CCCCCC; padding: 5px; display: inline-block;}',
-    'inline');
   drupal_add_js(
     '(function($){
       $(function(){
-        $("input[name=node_attach]").change(function(){
-          $("div[id^=\'mi-help\']").hide();
-          $("#mi-help-" + $(this).val()).show();
-        });
-        $("input[id=\'edit-node-attach-0\']").trigger("change");
+        $("input[name=create_content]").change(function(){
+          if ($(this).attr("checked")) {
+            $("select[name=node_type], input[name=node_status]").removeAttr("disabled");
+            $("#edit-node").show();
+          }
+          else {
+            $("select[name=node_type], input[name=node_status]").attr("disabled", 1);
+            $("#edit-node").hide();
+          }
+        }).trigger("change");
       });
     })(jQuery)',
     'inline');
-
-  $form['node']['node_attach'] = array(
-    '#type' => 'radios',
-    '#title' => t('Content relation'),
-    '#options' => array(
-      MI_NODE_LINK => t('Link to existing content'),
-      MI_NODE_LINK_CREATE => t('Link to existing and create empty content'),
-      MI_NODE_RECREATE => t('Remove existing and create empty content'),
-    ),
-    '#description' =>
-      '<div class="hint" id="mi-help-' . MI_NODE_LINK . '">' . t('Look for existing content by either path or title.<br/>If content was not found create menu links pointing to &lt;front&gt.') . '</div>'
-      . '<div class="hint" id="mi-help-' . MI_NODE_LINK_CREATE . '">' . t('Look for existing content by either path or title.<br/>If content was not found it will be created as stub.') . '</div>'
-      . '<div class="hint" id="mi-help-' . MI_NODE_RECREATE . '">' . t('Remove existing menu items and content referenced by them,<br/>and then apply the previous option. Use carefully to evade data loss!') . '</div>',
-    '#default_value' => !empty($form_state['values']['node_attach']) ? $form_state['values']['node_attach'] : MI_NODE_LINK,
-  );
-
-  $form['node']['search_title'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Search content by title'),
-    '#description' => t('Content will be searched by title. The first content found with given title will be used.'),
-    '#default_value' => !empty($form_state['values']['search_title']) ? $form_state['values']['search_title'] : 0,
-  );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['sumbit'] = array(
@@ -143,6 +142,15 @@ function menu_import_form_step1(&$form, &$form_state) {
  * Step 1 form validate handler.
  */
 function menu_import_form_step1_validate($form, &$form_state) {
+  $node_types = node_type_get_names();
+  if ($form_state['values']['create_content'] && empty($node_types)) {
+    form_set_error('create_content', t('No content types were found, cannot create empty content.'));
+  }
+
+  if (!$form_state['values']['node_type'] && $form_state['values']['create_content']) {
+    form_set_error('node_type', t('Content type is required.'));
+  }
+
   $validators = array(
     'file_validate_extensions' => array('txt'),
   );
@@ -162,11 +170,12 @@ function menu_import_form_step1_submit($form, &$form_state) {
   $file = $form_state['values']['file'];
 
   $form_state['storage']['options'] = array(
-//    'search_alias' => $form_state['values']['search_alias'],
-    'search_title' => $form_state['values']['search_title'],
-    'node_language' => $form_state['values']['node_language'],
+    'create_content' => $form_state['values']['create_content'],
+    'link_to_content' => $form_state['values']['link_to_content'],
+    'remove_menu_items' => $form_state['values']['remove_menu_items'],
+      
     'node_type' => $form_state['values']['node_type'],
-    'node_attach' => $form_state['values']['node_attach'],
+    'node_language' => $form_state['values']['node_language'],
     'node_status' => $form_state['values']['node_status'],
   );
 
@@ -243,8 +252,8 @@ function menu_import_display_result(array $result) {
   if ($result['matched_nodes']) {
     drupal_set_message(t('Existing content matched: @count items.', array('@count' => $result['matched_nodes'])));
   }
-  if ($result['deleted_nodes']) {
-    drupal_set_message(t('Content deleted: @count items.', array('@count' => $result['deleted_nodes'])));
+  if ($result['deleted_menu_items']) {
+    drupal_set_message(t('Menu items deleted: @count items.', array('@count' => $result['deleted_menu_items'])));
   }
 
   // Show additional statistic messages.
@@ -267,38 +276,46 @@ function menu_import_form_back_submit($form, &$form_state) {
 
 /**
  * Renders the menu for preview.
+ *
+ * @param $menu
+ *   The whole menu structure.
+ * @param $options
+ *   Array of import options.
+ *
+ * @return
+ *   Array understandable by Drupal's theme engine.
  */
 function menu_import_preview($menu, array $options) {
   $menu_name = $menu[0]['menu_name'];
   $menus = menu_get_menus();
 
   $descriptions = array();
+
+  if ($options['remove_menu_items']) {
+    $descriptions[] = t('Current menu items will be removed');
+  }
+  
   $descriptions[] = t('Import @count items into "@menu_title" menu (@menu_name)',
     array(
       '@count' => count($menu) - 2, // Minus errors and root item.
       '@menu_title' => $menus[$menu_name],
       '@menu_name' => $menu_name
   ));
+  
+  if ($options['link_to_content']) {
+    $descriptions[] = t('Link to existing content if found');
+  }
 
-  switch ($options['node_attach']) {
-    case MI_NODE_LINK:
-      $descriptions[] = t('Link to existing content');
-      break;
-    case MI_NODE_LINK_CREATE:
-      $descriptions[] = t('Link to existing and create empty content');
-      break;
-    case MI_NODE_RECREATE:
-      $descriptions[] = t('Remove existing and create empty content');
-      break;
+  if ($options['create_content']) {
+    $descriptions[] = t('Empty content of type "@type" will be created', array('@type' => $options['node_type']));
+    $status = $options['node_status'] ? t('published') : t('not published');
+    $descriptions[] = t('Content status: @status', array('@status' => $status));
   }
 
   if ($options['node_language'] != LANGUAGE_NONE) {
     $language = module_exists('locale') ? locale_language_name($options['node_language']) : $options['node_language'];
     $descriptions[] = t('Content language: @language', array('@language' => $language));
   }
-
-  $status = $options['node_status'] ? t('published') : t('not published');
-  $descriptions[] = t('Content status: @status', array('@status' => $status));
 
   $rows = array();
   $depth = 0;

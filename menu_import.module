@@ -5,13 +5,6 @@
  */
 
 /**
- * Node matching/creation options.
- */
-define('MI_NODE_LINK', 0);
-define('MI_NODE_LINK_CREATE', 1);
-define('MI_NODE_RECREATE', 2);
-
-/**
  * Implementation of hook_help().
  */
 function menu_import_help($path, $arg) {

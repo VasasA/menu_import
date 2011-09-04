@@ -2,7 +2,7 @@
 
 /**
  * @file
- * test file for menu_import module.
+ * Test file for menu_import module.
  */
 
 /**
@@ -41,10 +41,10 @@ class MenuImportTestCase extends DrupalWebTestCase {
     $post_data = array(
       'menu_name' => 'main-menu',
       'files[upload]'    => $file,
+      'create_content' => TRUE,
+      'link_to_content' => TRUE,
       'node_type' => 'page',
       'node_status' => TRUE,
-      'node_attach' => MI_NODE_LINK_CREATE,
-      'search_title' => FALSE
     );
     $this->drupalPost($post_url, $post_data, t('Upload & preview'));
 
@@ -57,8 +57,9 @@ class MenuImportTestCase extends DrupalWebTestCase {
         '@menu_title' => $menu_title,
         '@menu_name' => $menu_machine_name
       )));
-    $this->assertText('Link to existing and create empty content');
-    $this->assertText('Content status: published');
+    $this->assertText('Link to existing content if found');
+    $this->assertText(t('Empty content of type "@type" will be created', array('@type' => 'page')));
+    $this->assertText(t('Content status: @status', array('@status' => 'published')));
 
     // Assert menu is parsed correctly.
     // Drupal may change this structure!
