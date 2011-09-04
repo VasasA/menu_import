@@ -1,5 +1,23 @@
 $Id
 
+WHEN DO YOU NEED THIS MODULE?
+You need it when you want to:
+
+1. Create a multilevel menu, without specific details about where the menu links
+  will point to. You may need this when you want to create a prototype of your future site,
+  or when you haven't decided yet where each menu link will point to. The module will
+  create the menu for you using optionally provided external or local Drupal URLs.
+  See the import file structure for details.
+
+2. Create a multilevel menu with some/all links pointing to empty stub content.
+  You may need this when you want to create a prototype of your future site,
+  and you haven't decided yet about the content but you need some tangible content
+  to be available.
+
+3. Update an existing menu by adding new items. You may add new items the same way as described
+in points 1 and 2 above.
+
+
 USAGE INSTRUCTIONS:
 
 1. Install the module and configure permissions to allow import.
@@ -52,7 +70,4 @@ USAGE INSTRUCTIONS:
 7. Enjoy your saved time ;)
 
 FEATURES:
- - import your site menu(s) using an easy to understand text format
- - import options:
-   - option to publish or not publish the stub nodes
-
+1. Quickly create your site's menus using an easy to understand text format.
