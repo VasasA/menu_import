@@ -101,13 +101,14 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     'level' => 0,
   );
 
-  // Only * and - are allowed as indentation characters
-  // URL aliases are separated from title by vertical bar or semi-colon
-  preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)([\|;]{1})?([^\|;]*)?/', $line, $matches);
+  // Only * and - are allowed as indentation characters.
+  // URL aliases are separated from title by vertical bar (|) or semi-colon (;).
+  preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)([\|;]{1}[^\|;]*)?([\|;]{1}[^\|;]*)?/', $line, $matches);
 
-  $level = drupal_strlen($matches[1]);
+  $level = strlen($matches[1]); // No sense to use drupal_strlen on indentation.
   $title = trim(strip_tags($matches[3]));
-  $path  = trim($matches[5]);
+  $path  = isset($matches[4]) ? trim(str_replace(array('|', ';'), '', $matches[4])) : '';
+  $description = isset($matches[5]) ? trim(str_replace(array('|', ';'), '', $matches[5])) : '';
 
   // Skip empty items
   if (!strlen($title)) {
@@ -146,6 +147,10 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     $result = _menu_import_lookup_path($path, $title, $options);
     $menuitem['link_path'] = $result['link_path'];
     $menuitem['nid'] = $result['nid'];
+  }
+  
+  if ($description) {
+    $menuitem['description'] = $description;
   }
 
   return $menuitem;
@@ -306,7 +311,6 @@ function menu_import_save_menu($menu, $options) {
       $menuitem = $menu[$index];
       $menuitem['plid'] = $menu[$menuitem['parent']]['mlid'];
       $menuitem['menu_name'] = $menu_name;
-      $menuitem['description'] = '';
 
       // Do not create nodes for external links.
       if ($menuitem['external']) {
@@ -357,6 +361,11 @@ function menu_import_save_menu($menu, $options) {
         }
       }
 
+      // Save description if allowed.
+      if (isset($menuitem['description']) && $options['import_description']) {
+        $menuitem['options']['attributes']['title'] = $menuitem['description'];
+      }
+      
       // Save menuitem and set mlid.
       $mlid = menu_link_save($menuitem);
       if (!$mlid) {

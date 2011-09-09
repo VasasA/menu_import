@@ -43,28 +43,29 @@ USAGE INSTRUCTIONS:
   ** Page6
   *** Page7
 
-  Also, you may optionally specify path alias (alternative path)
+  You may optionally specify path alias (alternative path)
   or external URL. Writing it after node's title, separating by semicolon or vertical bar:
-  External URLs should ALWAYS start with "http://".
+  External URLs should ALWAYS start with "http://". Also, you can provide
+  a description for menu item(s), by putting it in the third "column".
 
-    Page1|page1
-    - Page2|page1/page2
-    - Page3|page1/page3
-    Page4;http://domain.com/
+    Page1|node/1|This is an optional description
+    - Page2
+    - Page3||The line above and this one will point to <front>
+    Page4;http://domain.com/;Visit domain.com!
     - Page5;http://mail.com/index.php
-    -- Page6;page4/page5/page6
+    -- Page6 ; non/existent/path ; will be replaced with <front>
 
   Space(s) between indentation symbol "*" or "-" and menu/node title are optional,
   however you cannot put spaces between indentation symbols like "* * *" or "-- - -".
 
-  Use examples from menu_samples directory to better understand the syntax and features.
+  Use examples from menu_samples (and tests) directory to better understand the syntax and features.
 
-3. Go to Site building -> Menus
+3. Go to "Structure" -> "Menus"
 
-4. Select "Menu import" tab
+4. Select "Menu import" tab.
 
-5. Select the site map file created earlier and specify necessary options
+5. Select the site map file created earlier and specify necessary options.
 
-6. Submit and see the new menu structure with stub nodes created automatically.
+6. Submit and see the new menu structure with stub content created automatically.
 
 7. Enjoy your saved time ;)

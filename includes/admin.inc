@@ -51,22 +51,29 @@ function menu_import_form_step1(&$form, &$form_state) {
   $form['main']['create_content'] = array(
     '#type' => 'checkbox',
     '#title' => t('Create empty content'),
-    '#description' => t('check to create empty content.'),
+    '#description' => t('Create empty content if none was found.'),
     '#default_value' => !empty($form_state['values']['create_content']) ? $form_state['values']['create_content'] : 0,
   );
 
   $form['main']['link_to_content'] = array(
     '#type' => 'checkbox',
     '#title' => t('Link to existing content'),
-    '#description' => t('check to look for existing content by path or title.'),
+    '#description' => t('Look for existing content by path or title.'),
     '#default_value' => !empty($form_state['values']['link_to_content']) ? $form_state['values']['link_to_content'] : 0,
   );
 
   $form['main']['remove_menu_items'] = array(
     '#type' => 'checkbox',
     '#title' => t('Remove existing menu items'),
-    '#description' => t('check to remove current menu items.'),
+    '#description' => t('Remove current menu items before running import.'),
     '#default_value' => !empty($form_state['values']['remove_menu_items']) ? $form_state['values']['remove_menu_items'] : 0,
+  );
+
+  $form['main']['import_description'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Import item description'),
+    '#description' => t('Allow importing of menu item description if available.'),
+    '#default_value' => !empty($form_state['values']['import_description']) ? $form_state['values']['import_description'] : 0,
   );
   
   $form['node'] = array(
@@ -173,6 +180,7 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'create_content' => $form_state['values']['create_content'],
     'link_to_content' => $form_state['values']['link_to_content'],
     'remove_menu_items' => $form_state['values']['remove_menu_items'],
+    'import_description' => $form_state['values']['import_description'],
       
     'node_type' => $form_state['values']['node_type'],
     'node_language' => $form_state['values']['node_language'],
@@ -300,8 +308,9 @@ function menu_import_preview($menu, array $options) {
       '@count' => count($menu) - 2, // Minus errors and root item.
       '@menu_title' => $menus[$menu_name],
       '@menu_name' => $menu_name
-  ));
-  
+    ))
+    . ($options['import_description'] ? t(', descriptions included') : '');
+ 
   if ($options['link_to_content']) {
     $descriptions[] = t('Link to existing content if found');
   }
@@ -320,7 +329,7 @@ function menu_import_preview($menu, array $options) {
   $rows = array();
   $depth = 0;
   foreach ($menu[0]['children'] as $index) {
-    $new_rows = _menu_import_preview_row_recurse($menu, $index, $depth);
+    $new_rows = _menu_import_preview_row_recurse($menu, $index, $depth, $options);
     foreach ($new_rows as $row) {
       $rows[] = $row;
     }
@@ -332,9 +341,16 @@ function menu_import_preview($menu, array $options) {
     '#title' => t('Import options'),
     '#type' => 'ul',
   );
+  
+  $header = array(t('Menu Item'), t('Content exists'), t('Path'), t('System path'));
+  if ($options['import_description']) {
+    $header[] = t('Description');
+  }
+  $header[] = t('Weight');
+
   $build['menu'] = array(
     '#theme' => 'table',
-    '#header' => array(t('Menu Item'), t('Content exists'), t('Path'), t('System path'), t('Weight')),
+    '#header' => $header,
     '#rows' => $rows,
     '#caption' => t('Menu preview'),
   );
@@ -344,7 +360,7 @@ function menu_import_preview($menu, array $options) {
 /**
  * Recursive function for theming a menu item and its children.
  */
-function _menu_import_preview_row_recurse($menu, $index, $level) {
+function _menu_import_preview_row_recurse(&$menu, $index, $level, $options) {
   $rows = array();
 
   $title = theme('indentation', array('size' => $level));
@@ -355,19 +371,26 @@ function _menu_import_preview_row_recurse($menu, $index, $level) {
   $link_path = isset($menu[$index]['link_path']) && !empty($menu[$index]['link_path'])
                 ? $menu[$index]['link_path'] : ' - ';
   $weight = $menu[$index]['weight'];
+  $description = isset($menu[$index]['description'])
+                  ? $menu[$index]['description'] : ' - ';
 
+  $row_data = array(
+    array('data' => $title),
+    array('data' => $exists),
+    array('data' => check_url($path)),
+    array('data' => check_url($link_path))
+  );
+  if ($options['import_description']) {
+    $row_data[] = array('data' => $description);
+  }
+  $row_data[] = array('data' => $weight);
+  
   $rows[] = array(
-    'data' => array(
-      array('data' => $title),
-      array('data' => $exists),
-      array('data' => check_url($path)),
-      array('data' => check_url($link_path)),
-      array('data' => $weight),
-    )
+    'data' => $row_data
   );
 
   foreach ($menu[$index]['children'] as $child) {
-    $new_rows = _menu_import_preview_row_recurse($menu, $child, ($level +1));
+    $new_rows = _menu_import_preview_row_recurse($menu, $child, ($level +1), $options);
     foreach ($new_rows as $row) {
       $rows[] = $row;
     }
