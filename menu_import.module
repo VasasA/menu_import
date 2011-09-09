@@ -77,7 +77,7 @@ function menu_import_permission() {
  */
 function menu_import_file($uri, $menu_name, array $options) {
   module_load_include('inc', 'menu_import', 'includes/import');
-  $menu = menu_import_parse_menu($uri, $menu_name, $options);
+  $menu = menu_import_parse_menu_from_file($uri, $menu_name, $options);
   if ($menu['errors']) {
     return array('errors' => $menu['errors']);
   }
