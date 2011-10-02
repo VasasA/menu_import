@@ -79,11 +79,14 @@ function menu_import_form_step1(&$form, &$form_state) {
   $form['node'] = array(
     '#type' => 'fieldset',
     '#title' => t('Content settings'),
+    '#attributes' => array('style' => 'display: none')
   );
 
   $node_types = node_type_get_names();
+  
+  // Disable content generation if no content types were found.
   if (empty($node_types)) {
-    drupal_set_message(t('No content types were found, import is not possible.'), 'error', FALSE);
+    $form['main']['create_content']['#disabled'] = TRUE;
   }
 
   $form['node']['node_type'] = array(
@@ -95,14 +98,14 @@ function menu_import_form_step1(&$form, &$form_state) {
   );
 
   if (module_exists('locale')) {
+    global $language;
     $language_list = locale_language_list();
     $form['node']['node_language'] = array(
       '#type' => 'select',
       '#title' => t('Content language'),
       '#options' => $language_list,
       '#description' => t('Language of the newly created content.'),
-      '#required' => TRUE,
-      '#default_value' => !empty($form_state['values']['node_language']) ? $form_state['values']['node_language'] : NULL,
+      '#default_value' => !empty($form_state['values']['node_language']) ? $form_state['values']['node_language'] : $language->language
     );
   }
   else {
@@ -125,13 +128,13 @@ function menu_import_form_step1(&$form, &$form_state) {
         $("input[name=create_content]").change(function(){
           if ($(this).attr("checked")) {
             $("select[name=node_type], input[name=node_status]").removeAttr("disabled");
-            $("#edit-node").show();
+            $("#edit-node").fadeIn();
           }
           else {
             $("select[name=node_type], input[name=node_status]").attr("disabled", 1);
-            $("#edit-node").hide();
+            $("#edit-node").fadeOut();
           }
-        }).trigger("change");
+        });
       });
     })(jQuery)',
     'inline');
