@@ -79,7 +79,9 @@ function menu_import_form_step1(&$form, &$form_state) {
   $form['node'] = array(
     '#type' => 'fieldset',
     '#title' => t('Content settings'),
-    '#attributes' => array('style' => 'display: none')
+    '#attributes' => empty($form_state['values']['create_content']) 
+      // if validation failed need to check 'input' since no 'values' exist
+      && empty($form_state['input']['create_content']) ? array('style' => 'display: none') : NULL
   );
 
   $node_types = node_type_get_names();
