@@ -13,8 +13,10 @@ function menu_import_help($path, $arg) {
   switch ($path) {
     case 'admin/help#menu_import':
       $output .= '<p>';
-      $output .= t('The Menu Import module allows you to import a menu hierarchy from an indented (by dash or asterix symbol) text file. This can be used to either arrange pre-existing content or stub out an arrangement with empty nodes. <br/>Text files are expected to have the following structure:<br/><code>Main page<br/>-Sub-page 1<br/>-Sub-page 2<br/>--Sub-sub-page 3</code>');
-      $output .= '</p>';
+      $output .= t('Menu Import module allows you to import a menu hierarchy from an indented (by dash or asterix symbol) text file. This can be used to either arrange pre-existing content or stub out an arrangement with new nodes containing initial content.');
+      $output .= '</p><p>';
+      $output .= t('Text files are expected to have the following structure:');
+      $output .= '</p><code>Main page<br />-Sub-page 1<br />-Sub-page 2<br />--Sub-sub-page 3</code>';
       break;
   }
 

@@ -1,7 +1,7 @@
 $Id
 
-WHEN DO YOU NEED THIS MODULE?
-You need it when you want to:
+WHAT IS THIS MODULE FOR?
+You may need it when you want to:
 
 1. Create a multilevel menu, without specific details about where the menu links
   will point to. You may need this when you want to create a prototype of your future site,
@@ -9,7 +9,7 @@ You need it when you want to:
   create the menu for you using optionally provided external or local Drupal URLs.
   See the import file structure for details.
 
-2. Create a multilevel menu with some/all links pointing to empty stub content.
+2. Create a multilevel menu with some/all links pointing to some stub content.
   You may need this when you want to create a prototype of your future site,
   and you haven't decided yet about the content but you need some tangible content
   to be available.
@@ -22,7 +22,7 @@ USAGE INSTRUCTIONS:
 
 1. Install the module and configure permissions to allow import.
 
-2. Prepare a site map file 
+2. Prepare a site map file
 
   Menu structure must follow this example:
 
@@ -58,7 +58,7 @@ USAGE INSTRUCTIONS:
   Space(s) between indentation symbol "*" or "-" and menu/node title are optional,
   however you cannot put spaces between indentation symbols like "* * *" or "-- - -".
 
-  Use examples from menu_samples (and tests) directory to better understand the syntax and features.
+  Use examples from "tests" directory for better understanding of the syntax.
 
 3. Go to "Structure" -> "Menus"
 

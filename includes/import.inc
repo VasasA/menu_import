@@ -148,7 +148,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     $menuitem['link_path'] = $result['link_path'];
     $menuitem['nid'] = $result['nid'];
   }
-  
+
   if ($description) {
     $menuitem['description'] = $description;
   }
@@ -270,7 +270,7 @@ function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
   if ($empty_lines) {
     $menu['errors'][] = t('Empty lines skipped: @line_number.', array('@line_number' => $empty_lines));
   }
-  
+
   return $menu;
 }
 
@@ -285,6 +285,8 @@ function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
  *   - create_content: create new content (also if link_to_content not set)
  *   - node_type: node type
  *   - node_language: node language
+ *   - node_body: node body
+ *   - node_author: node author
  *   - node_status: node status
  *
  * @return
@@ -301,12 +303,12 @@ function menu_import_save_menu($menu, $options) {
   }
 
   $menu[0]['mlid'] = 0;
-  
+
   foreach ($menu as $item) {
     if (!isset($item['children'])) {
       continue;
     }
-    
+
     foreach ($item['children'] as $index) {
       $menuitem = $menu[$index];
       $menuitem['plid'] = $menu[$menuitem['parent']]['mlid'];
@@ -365,7 +367,7 @@ function menu_import_save_menu($menu, $options) {
       if (isset($menuitem['description']) && $options['import_description']) {
         $menuitem['options']['attributes']['title'] = $menuitem['description'];
       }
-      
+
       // Save menuitem and set mlid.
       $mlid = menu_link_save($menuitem);
       if (!$mlid) {
@@ -393,6 +395,8 @@ function menu_import_save_menu($menu, $options) {
  *   - node_title
  *   - node_type
  *   - node_language
+ *   - node_body
+ *   - node_author
  *   - node_status
  *
  * @return
@@ -400,14 +404,18 @@ function menu_import_save_menu($menu, $options) {
  */
 function menu_import_create_node($options) {
   $node = new stdClass();
-  $node->title = $options['node_title'];
-  
-  // @todo: it would be nice to select the author manually.
-  $node->uid = empty($GLOBALS['user']->uid) ? 1 : $GLOBALS['user']->uid;
-  $node->type = $options['node_type'];
-  $node->body = '';
-  $node->status = $options['node_status'];
+
+  $node->type     = $options['node_type'];
   $node->language = $options['node_language'];
+  $node->title    = $options['node_title'];
+
+  $node->body[$node->language][0]['value']   = $options['node_body'];
+  $node->body[$node->language][0]['summary'] = text_summary($options['node_body']);
+  $node->body[$node->language][0]['format']  = 'filtered_html';
+
+  $node->status = $options['node_status'];
+  $node->uid    = $options['node_author'];
+
   node_save($node);
   return $node->nid;
 }
@@ -443,7 +451,7 @@ function menu_import_delete_menuitems($menu_name, $with_nodes = FALSE) {
     }
     $deleted_cnt++;
   }
-  
+
   return $deleted_cnt;
 }
 

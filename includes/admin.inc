@@ -50,8 +50,8 @@ function menu_import_form_step1(&$form, &$form_state) {
 
   $form['main']['create_content'] = array(
     '#type' => 'checkbox',
-    '#title' => t('Create empty content'),
-    '#description' => t('Create empty content if none was found.'),
+    '#title' => t('Create initial content'),
+    '#description' => t('Create initial content if none was found.'),
     '#default_value' => !empty($form_state['values']['create_content']) ? $form_state['values']['create_content'] : 0,
   );
 
@@ -75,17 +75,17 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#description' => t('Allow importing of menu item description if available.'),
     '#default_value' => !empty($form_state['values']['import_description']) ? $form_state['values']['import_description'] : 0,
   );
-  
+
   $form['node'] = array(
     '#type' => 'fieldset',
     '#title' => t('Content settings'),
-    '#attributes' => empty($form_state['values']['create_content']) 
+    '#attributes' => empty($form_state['values']['create_content'])
       // if validation failed need to check 'input' since no 'values' exist
       && empty($form_state['input']['create_content']) ? array('style' => 'display: none') : NULL
   );
 
   $node_types = node_type_get_names();
-  
+
   // Disable content generation if no content types were found.
   if (empty($node_types)) {
     $form['main']['create_content']['#disabled'] = TRUE;
@@ -117,6 +117,32 @@ function menu_import_form_step1(&$form, &$form_state) {
     );
   }
 
+  // Provide lorem ipsum as default body value.
+  $default_body_value =
+    'Lorem ipsum dolor sit amet, quis aenean at euismod venenatis '
+    . 'interdum ante, placerat nunc metus, velit adipiscing purus mauris, aliquet '
+    . 'eros molestie mauris morbi odio egestas, porttitor amet. Suspendisse '
+    . 'vestibulum maiores non, nonummy mauris velit, habitasse montes quam eros. '
+    . 'Et condimentum lorem adipiscing dolor, in sed libero, tellus purus magnis, '
+    . 'nec non bibendum. Erat magnis ut, mauris suspendisse vestibulum dictum tincidunt.';
+
+  $form['node']['node_body'] = array(
+    '#type' => 'textarea',
+    '#title' => t('Body'),
+    '#description' => t('The initial content of the "Body" field. "Filtered HTML" filter will be used.'),
+    '#default_value' => !empty($form_state['values']['node_body']) ? $form_state['values']['node_body'] : $default_body_value,
+  );
+
+  $users = db_query('SELECT uid, name FROM {users} WHERE uid <> 0')->fetchAllKeyed();
+
+  $form['node']['node_author'] = array(
+    '#type' => 'select',
+    '#title' => t('Authored by'),
+    '#options' => $users,
+    '#description' => t('Attribute authorship to the selected user.'),
+    '#default_value' => !empty($form_state['values']['node_author']) ? $form_state['values']['node_author'] : $GLOBALS['user']->uid
+  );
+
   $form['node']['node_status'] = array(
     '#type' => 'checkbox',
     '#title' => t('Published'),
@@ -125,21 +151,20 @@ function menu_import_form_step1(&$form, &$form_state) {
   );
 
   drupal_add_js(
-    '(function($){
-      $(function(){
-        $("input[name=create_content]").change(function(){
+    '(function($) {
+      $(function() {
+        $("input[name=create_content]").change(function() {
           if ($(this).attr("checked")) {
-            $("select[name=node_type], input[name=node_status]").removeAttr("disabled");
             $("#edit-node").fadeIn();
           }
           else {
-            $("select[name=node_type], input[name=node_status]").attr("disabled", 1);
             $("#edit-node").fadeOut();
           }
         });
       });
     })(jQuery)',
-    'inline');
+    'inline'
+  );
 
   $form['actions'] = array('#type' => 'actions');
   $form['actions']['sumbit'] = array(
@@ -156,11 +181,7 @@ function menu_import_form_step1(&$form, &$form_state) {
 function menu_import_form_step1_validate($form, &$form_state) {
   $node_types = node_type_get_names();
   if ($form_state['values']['create_content'] && empty($node_types)) {
-    form_set_error('create_content', t('No content types were found, cannot create empty content.'));
-  }
-
-  if (!$form_state['values']['node_type'] && $form_state['values']['create_content']) {
-    form_set_error('node_type', t('Content type is required.'));
+    form_set_error('create_content', t('No content types were found, cannot create initial content.'));
   }
 
   $validators = array(
@@ -186,9 +207,11 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'link_to_content' => $form_state['values']['link_to_content'],
     'remove_menu_items' => $form_state['values']['remove_menu_items'],
     'import_description' => $form_state['values']['import_description'],
-      
+
     'node_type' => $form_state['values']['node_type'],
     'node_language' => $form_state['values']['node_language'],
+    'node_body' => $form_state['values']['node_body'],
+    'node_author' => $form_state['values']['node_author'],
     'node_status' => $form_state['values']['node_status'],
   );
 
@@ -257,7 +280,7 @@ function menu_import_display_result(array $result) {
   if ($result['failed']) {
     drupal_set_message(t('Menu item creation failed: @count items.', array('@count' => $result['failed'])), 'error');
   }
-  
+
   // Show OK messages.
   if ($result['new_nodes']) {
     drupal_set_message(t('New content created: @count items.', array('@count' => $result['new_nodes'])));
@@ -282,6 +305,9 @@ function menu_import_display_result(array $result) {
  * Back button submit handler.
  */
 function menu_import_form_back_submit($form, &$form_state) {
+  // We have to re-render the form on Back action.
+  $form_state['no_cache'] = TRUE;
+
   $form_state['rebuild'] = TRUE;
   $form_state['values'] = $form_state['page_values'][1];
   $form_state['storage']['step'] = 1;
@@ -307,7 +333,7 @@ function menu_import_preview($menu, array $options) {
   if ($options['remove_menu_items']) {
     $descriptions[] = t('Current menu items will be removed');
   }
-  
+
   $descriptions[] = t('Import @count items into "@menu_title" menu (@menu_name)',
     array(
       '@count' => count($menu) - 2, // Minus errors and root item.
@@ -315,20 +341,24 @@ function menu_import_preview($menu, array $options) {
       '@menu_name' => $menu_name
     ))
     . ($options['import_description'] ? t(', descriptions included') : '');
- 
+
   if ($options['link_to_content']) {
     $descriptions[] = t('Link to existing content if found');
   }
 
   if ($options['create_content']) {
-    $descriptions[] = t('Empty content of type "@type" will be created', array('@type' => $options['node_type']));
+    $descriptions[] = t('Initial content of type "@type" will be created', array('@type' => $options['node_type']));
+
+    if ($options['node_language'] != LANGUAGE_NONE) {
+      $language = module_exists('locale') ? locale_language_name($options['node_language']) : $options['node_language'];
+      $descriptions[] = t('Content language: @language', array('@language' => $language));
+    }
+
+    $author = user_load($options['node_author']);
+    $descriptions[] = t('Content author: @author', array('@author' => $author->name));
+
     $status = $options['node_status'] ? t('published') : t('not published');
     $descriptions[] = t('Content status: @status', array('@status' => $status));
-  }
-
-  if ($options['node_language'] != LANGUAGE_NONE) {
-    $language = module_exists('locale') ? locale_language_name($options['node_language']) : $options['node_language'];
-    $descriptions[] = t('Content language: @language', array('@language' => $language));
   }
 
   $rows = array();
@@ -346,7 +376,7 @@ function menu_import_preview($menu, array $options) {
     '#title' => t('Import options'),
     '#type' => 'ul',
   );
-  
+
   $header = array(t('Menu Item'), t('Content exists'), t('Path'), t('System path'));
   if ($options['import_description']) {
     $header[] = t('Description');
@@ -389,7 +419,7 @@ function _menu_import_preview_row_recurse(&$menu, $index, $level, $options) {
     $row_data[] = array('data' => $description);
   }
   $row_data[] = array('data' => $weight);
-  
+
   $rows[] = array(
     'data' => $row_data
   );
