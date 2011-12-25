@@ -398,16 +398,13 @@ function menu_import_preview($menu, array $options) {
 function _menu_import_preview_row_recurse(&$menu, $index, $level, $options) {
   $rows = array();
 
-  $title = theme('indentation', array('size' => $level));
-  $title .= check_plain($menu[$index]['link_title']);
+  $title  = theme('indentation', array('size' => $level));
+  $title  .= check_plain($menu[$index]['link_title']);
   $exists = $menu[$index]['nid'] ? t('Yes') : t('No');
-  $path = isset($menu[$index]['path']) && !empty($menu[$index]['path'])
-            ? $menu[$index]['path'] : ' - ';
-  $link_path = isset($menu[$index]['link_path']) && !empty($menu[$index]['link_path'])
-                ? $menu[$index]['link_path'] : ' - ';
   $weight = $menu[$index]['weight'];
-  $description = isset($menu[$index]['description'])
-                  ? $menu[$index]['description'] : ' - ';
+  $path       = !empty($menu[$index]['path']) ? $menu[$index]['path'] : ' - ';
+  $link_path  = !empty($menu[$index]['link_path']) ? $menu[$index]['link_path'] : ' - ';
+  $description= isset($menu[$index]['description']) ? $menu[$index]['description'] : ' - ';
 
   $row_data = array(
     array('data' => $title),
