@@ -429,3 +429,25 @@ function _menu_import_preview_row_recurse(&$menu, $index, $level, $options) {
   }
   return $rows;
 }
+
+/**
+ * Menu export form.
+ */
+function menu_import_export_form(&$form, &$form_state) {
+  $form['menu_name'] = array(
+    '#type' => 'select',
+    '#title' => t('Menu to export'),
+    '#options' => menu_get_menus(),
+    '#required' => TRUE,
+    '#default_value' => !empty($form_state['values']['menu_name']) ? $form_state['values']['menu_name'] : NULL,
+  );
+
+  $form['sumbit'] = array(
+    '#type' => 'submit',
+    '#value' => t('Export'),
+  );
+}
+
+function menu_import_export_form_submit($form, &$form_state) {
+  
+}
