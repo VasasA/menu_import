@@ -46,7 +46,7 @@ function menu_import_menu() {
     'type' => MENU_LOCAL_TASK,
     'weight' => 11,
     'access arguments' => array('import menu from file'),
-    'file' => 'includes/admin.inc',
+    'file' => 'includes/export.inc',
   );
 
   return $items;
