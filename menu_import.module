@@ -39,6 +39,16 @@ function menu_import_menu() {
     'file' => 'includes/admin.inc',
   );
 
+  $items['admin/structure/menu/export'] = array(
+    'title' => 'Export menu',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('menu_import_export_form'),
+    'type' => MENU_LOCAL_TASK,
+    'weight' => 11,
+    'access arguments' => array('import menu from file'),
+    'file' => 'includes/export.inc',
+  );
+
   return $items;
 }
 
