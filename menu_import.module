@@ -65,7 +65,6 @@ function menu_import_permission() {
  *   - search_title: search node by title
  *   - node_attach: how to attach the node (see MI_NODE_* constants)
  *   - node_type: node type
- *   - node_language: node language
  *   - node_status: node status
  *
  * @return array

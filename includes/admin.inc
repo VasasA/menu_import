@@ -99,24 +99,6 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#default_value' => !empty($form_state['values']['node_type']) ? $form_state['values']['node_type'] : NULL,
   );
 
-  if (module_exists('locale')) {
-    global $language;
-    $language_list = locale_language_list();
-    $form['node']['node_language'] = array(
-      '#type' => 'select',
-      '#title' => t('Content language'),
-      '#options' => $language_list,
-      '#description' => t('Language of the newly created content.'),
-      '#default_value' => !empty($form_state['values']['node_language']) ? $form_state['values']['node_language'] : $language->language
-    );
-  }
-  else {
-    $form['node']['node_language'] = array(
-      '#type' => 'hidden',
-      '#value' => LANGUAGE_NONE,
-    );
-  }
-
   // Provide lorem ipsum as default body value.
   $default_body_value =
     'Lorem ipsum dolor sit amet, quis aenean at euismod venenatis '
@@ -209,7 +191,6 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'import_description' => $form_state['values']['import_description'],
 
     'node_type' => $form_state['values']['node_type'],
-    'node_language' => $form_state['values']['node_language'],
     'node_body' => $form_state['values']['node_body'],
     'node_author' => $form_state['values']['node_author'],
     'node_status' => $form_state['values']['node_status'],
@@ -348,11 +329,6 @@ function menu_import_preview($menu, array $options) {
 
   if ($options['create_content']) {
     $descriptions[] = t('Initial content of type "@type" will be created', array('@type' => $options['node_type']));
-
-    if ($options['node_language'] != LANGUAGE_NONE) {
-      $language = module_exists('locale') ? locale_language_name($options['node_language']) : $options['node_language'];
-      $descriptions[] = t('Content language: @language', array('@language' => $language));
-    }
 
     $author = user_load($options['node_author']);
     $descriptions[] = t('Content author: @author', array('@author' => $author->name));

@@ -44,7 +44,6 @@ class MenuImportTestCase extends DrupalWebTestCase {
       'create_content' => TRUE,
       'link_to_content' => TRUE,
       'node_type' => 'page',
-      'node_language' => LANGUAGE_NONE,
       'node_body'   => 'Some test content',
       'node_author'   => $this->privileged_user->uid,
       'node_status' => TRUE,

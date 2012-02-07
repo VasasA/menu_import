@@ -22,7 +22,7 @@ function _menu_import_lookup_path($path, $title, array $options) {
   $nid = $result['nid'] = $is_node = FALSE;
 
   // Search by alias by default.
-  $system_url = drupal_lookup_path('source', $path, $options['node_language']);
+  $system_url = drupal_lookup_path('source', $path);
   // No such alias in the system.
   if (!$system_url) {
     $system_url = $path;
@@ -42,7 +42,6 @@ function _menu_import_lookup_path($path, $title, array $options) {
     $nid = db_select('node', 'n')
       ->fields('n', array('nid'))
       ->condition('n.title', $title)
-      ->condition('n.language', $options['node_language'])
       ->execute()->fetchField();
   }
 
@@ -166,7 +165,6 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
  * @param $options
  *   An associative array of search options.
  *   - search_title: search node by title.
- *   - node_language: language to use.
  *
  * @return array
  *   array structure of menu.
@@ -284,7 +282,6 @@ function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
  *   - link_to_content: look for existing nodes and link to them
  *   - create_content: create new content (also if link_to_content not set)
  *   - node_type: node type
- *   - node_language: node language
  *   - node_body: node body
  *   - node_author: node author
  *   - node_status: node status
@@ -394,7 +391,6 @@ function menu_import_save_menu($menu, $options) {
  *   Array relevant array keys are:
  *   - node_title
  *   - node_type
- *   - node_language
  *   - node_body
  *   - node_author
  *   - node_status
@@ -406,7 +402,7 @@ function menu_import_create_node($options) {
   $node = new stdClass();
 
   $node->type     = $options['node_type'];
-  $node->language = $options['node_language'];
+  $node->language = LANGUAGE_NONE;
   $node->title    = $options['node_title'];
 
   $node->body[$node->language][0]['value']   = $options['node_body'];
