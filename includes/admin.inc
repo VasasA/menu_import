@@ -69,13 +69,6 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#default_value' => !empty($form_state['values']['remove_menu_items']) ? $form_state['values']['remove_menu_items'] : 0,
   );
 
-  $form['main']['import_description'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Import item description'),
-    '#description' => t('Allow importing of menu item description if available.'),
-    '#default_value' => !empty($form_state['values']['import_description']) ? $form_state['values']['import_description'] : 0,
-  );
-
   $form['node'] = array(
     '#type' => 'fieldset',
     '#title' => t('Content settings'),
@@ -188,8 +181,6 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'create_content' => $form_state['values']['create_content'],
     'link_to_content' => $form_state['values']['link_to_content'],
     'remove_menu_items' => $form_state['values']['remove_menu_items'],
-    'import_description' => $form_state['values']['import_description'],
-
     'node_type' => $form_state['values']['node_type'],
     'node_body' => $form_state['values']['node_body'],
     'node_author' => $form_state['values']['node_author'],
@@ -320,8 +311,7 @@ function menu_import_preview($menu, array $options) {
       '@count' => count($menu) - 2, // Minus errors and root item.
       '@menu_title' => $menus[$menu_name],
       '@menu_name' => $menu_name
-    ))
-    . ($options['import_description'] ? t(', descriptions included') : '');
+    ));
 
   if ($options['link_to_content']) {
     $descriptions[] = t('Link to existing content if found');
@@ -354,9 +344,7 @@ function menu_import_preview($menu, array $options) {
   );
 
   $header = array(t('Menu Item'), t('Content exists'), t('Path'), t('System path'));
-  if ($options['import_description']) {
-    $header[] = t('Description');
-  }
+
   $header[] = t('Weight');
 
   $build['menu'] = array(
@@ -388,9 +376,6 @@ function _menu_import_preview_row_recurse(&$menu, $index, $level, $options) {
     array('data' => check_url($path)),
     array('data' => check_url($link_path))
   );
-  if ($options['import_description']) {
-    $row_data[] = array('data' => $description);
-  }
   $row_data[] = array('data' => $weight);
 
   $rows[] = array(

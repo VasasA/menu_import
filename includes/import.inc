@@ -360,8 +360,8 @@ function menu_import_save_menu($menu, $options) {
         }
       }
 
-      // Save description if allowed.
-      if (isset($menuitem['description']) && $options['import_description']) {
+      // Save description if available.
+      if (isset($menuitem['description'])) {
         $menuitem['options']['attributes']['title'] = $menuitem['description'];
       }
 
