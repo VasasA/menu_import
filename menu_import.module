@@ -66,48 +66,60 @@ function menu_import_permission() {
  * Import menu from text file.
  *
  * @param $uri
- *   uri of the uploaded file
+ *   uri of the uploaded file.
  * @param $menu_name
- *   iternal name of the menu
+ *   iternal name of the menu.
  * @param $options
- *   An associative array of import options.
- *   - search_alias: search node by alias
- *   - search_title: search node by title
- *   - node_attach: how to attach the node (see MI_NODE_* constants)
- *   - node_type: node type
- *   - node_status: node status
+ *   An associative array of import options. See menu_import_save_menu for reference.
+ * @see menu_import_save_menu
  *
  * @return array
  *   An associative array of result.
- *   - error: in case of error, this will contain an array of error messages.
- *   - deleted_nodes: count of nodes deleted
- *   - matched_nodes: count of nodes matched
- *   - new_nodes: count of nodes created
- *   - unknown_links: count of menu items with internal links (not nodes)
- *   - external_links: count of menu items with external links
+ *   - error: in case of error, this will contain an array of error messages;
+ *   - deleted_nodes: count of nodes deleted;
+ *   - matched_nodes: count of nodes matched;
+ *   - new_nodes: count of nodes created;
+ *   - unknown_links: count of menu items with internal links (not nodes);
+ *   - external_links: count of menu items with external links.
  */
 function menu_import_file($uri, $menu_name, array $options) {
   module_load_include('inc', 'menu_import', 'includes/import');
   $menu = menu_import_parse_menu_from_file($uri, $menu_name, $options);
+  // Stop import on any errors.
   if ($menu['errors']) {
     return array('errors' => $menu['errors']);
   }
-  return menu_import_save_menu($menu, $options);
+
+  $result = menu_import_save_menu($menu, $options);
+
+  if (!empty($menu['warnings'])) {
+    $result['warnings'] = $menu['warnings'];
+  }
+
+  return $result;
 }
 
 /**
  * Import menu from text variable.
  *
  * @param $text
- *   string containing the menu structure
+ *   string containing the menu structure.
  *
  * @see menu_import_file().
  */
 function menu_import_string($text, $menu_name, array $options) {
   module_load_include('inc', 'menu_import', 'includes/import');
   $menu = menu_import_parse_menu_from_string($text, $menu_name, $options);
+  // Stop import on any errors.
   if ($menu['errors']) {
     return array('errors' => $menu['errors']);
   }
-  return menu_import_save_menu($menu, $options);
+
+  $result = menu_import_save_menu($menu, $options);
+
+  if (!empty($menu['warnings'])) {
+    $result['warnings'] = $menu['warnings'];
+  }
+
+  return $result;
 }

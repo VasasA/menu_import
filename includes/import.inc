@@ -171,7 +171,8 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
  */
 function menu_import_parse_menu_from_file($uri, $menu_name, array $options) {
   $menu = array(
-    'errors' => array(),
+    'errors'    => array(),
+    'warnings'  => array(),
     0 => array(
       'menu_name' => $menu_name,
       'children' => array(),
@@ -212,7 +213,7 @@ function menu_import_parse_menu_from_file($uri, $menu_name, array $options) {
   }
 
   if ($empty_lines) {
-    $menu['errors'][] = t('Empty lines skipped: @line_number.', array('@line_number' => $empty_lines));
+    $menu['warnings'][] = t('Empty lines skipped: @line_number.', array('@line_number' => $empty_lines));
   }
 
   fclose($handle);
@@ -231,6 +232,7 @@ function menu_import_parse_menu_from_file($uri, $menu_name, array $options) {
 function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
   $menu = array(
     'errors' => array(),
+    'warnings'  => array(),
     0 => array(
       'menu_name' => $menu_name,
       'children' => array(),
@@ -266,7 +268,7 @@ function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
   }
 
   if ($empty_lines) {
-    $menu['errors'][] = t('Empty lines skipped: @line_number.', array('@line_number' => $empty_lines));
+    $menu['warnings'][] = t('Empty lines skipped: @line_number.', array('@line_number' => $empty_lines));
   }
 
   return $menu;
@@ -281,6 +283,7 @@ function menu_import_parse_menu_from_string($text, $menu_name, array $options) {
  *   An associative array of import options.
  *   - link_to_content: look for existing nodes and link to them
  *   - create_content: create new content (also if link_to_content not set)
+ *   - remove_menu_items: removes current menu items
  *   - node_type: node type
  *   - node_body: node body
  *   - node_author: node author
@@ -462,4 +465,21 @@ function menu_import_delete_menuitem($menuitem) {
     ->condition('menu_name', $menuitem['menu_name'])
     ->condition('link_path', 'node/' . $menuitem['nid'])
     ->execute();
+}
+
+/**
+ * Returns the array of messages shown when import is done
+ * with the same keys as menu_import_save_menu returns.
+ * @return array
+ */
+function menu_import_get_messages() {
+  return array(
+    'items_imported'=> 'Items imported: @count.',
+    'failed'        => 'Items failed: @count.',
+    'new_nodes'     => 'New content created: @count items.',
+    'matched_nodes' => 'Existing content matched: @count items.',
+    'deleted_menu_items'  => 'Menu items deleted: @count.',
+    'external_links'      => 'External URLs: @count items.',
+    'unknown_links'       => 'Content not found: @count items.'
+  );
 }

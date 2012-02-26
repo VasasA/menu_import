@@ -40,37 +40,59 @@ function menu_import_export_form($form, &$form_state) {
  * Menu export handler.
  */
 function menu_import_export_form_submit($form, &$form_state) {
-  global $me_options;
   $menu_name = $form_state['values']['menu_name'];
+  $options = array();
 
   switch ($form_state['values']['line_ending']) {
     case 'unix':
-      $me_options['line_ending'] = "\n";
+      $options['line_ending'] = "\n";
       break;
     case 'mac':
-      $me_options['line_ending'] = "\r";
+      $options['line_ending'] = "\r";
       break;
     case 'dos':
-      $me_options['line_ending'] = "\r\n";
+      $options['line_ending'] = "\r\n";
       break;
   }
 
+  $result = menu_import_export_menu($menu_name, $options);
+
+  if (empty($result['errors'])) {
+    $filename = "$menu_name-export.txt";
+    drupal_add_http_header('Content-type', 'text/plain');
+    drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    drupal_send_headers();
+    echo $result['menu'];
+    exit;
+  }
+  else {
+    drupal_set_message($result['errors'], 'error');
+  }
+}
+
+/**
+ * Exports menu to a string.
+ *
+ * @param $menu_name string name of the menu to be exported.
+ * @param $options array export options.
+ *
+ * @return array either the textual representation of the menu as 'menu'
+ *  or error description as 'errors' key value.
+ */
+function menu_import_export_menu($menu_name, $options) {
+  global $me_options;
+  $me_options = $options;
   $tree = menu_build_tree($menu_name);
 
   // Menu contains items.
   if (count($tree)) {
-    $filename = "$menu_name-export.txt";
     $output   = '';
     _menu_import_export_recurse($tree, 0, $output);
-    drupal_add_http_header('Content-type', 'text/plain');
-    drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-    drupal_send_headers();
-    echo $output;
-    exit;
+    return array('menu' => $output);
   }
-  // Empty menu.
+  // Menu is empty.
   else {
-    drupal_set_message(t('Menu @menu contains no items.', array('@menu' => $menu_name)), 'error');
+    return array('errors' => t('Menu @menu contains no items.', array('@menu' => $menu_name)));
   }
 }
 

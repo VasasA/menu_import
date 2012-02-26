@@ -191,11 +191,18 @@ function menu_import_form_step1_submit($form, &$form_state) {
   $menu = menu_import_parse_menu_from_file($file->uri, $form_state['values']['menu_name'], $form_state['storage']['options']);
   file_delete($file);
 
-  if ($menu['errors']) {
+  if (!empty($menu['errors'])) {
     foreach ($menu['errors'] as $error) {
-      drupal_set_message(check_plain($error), 'warning');
+      drupal_set_message(check_plain($error), 'error');
     }
   }
+
+  if (!empty($menu['warnings'])) {
+    foreach ($menu['warnings'] as $warn) {
+      drupal_set_message($warn, 'warning');
+    }
+  }
+
   $form_state['storage']['menu'] = $menu;
   $form_state['storage']['step'] = 2;
   $form_state['rebuild'] = TRUE;
@@ -245,31 +252,14 @@ function menu_import_form_step2_submit($form, &$form_state) {
  * Helper function to display result.
  */
 function menu_import_display_result(array $result) {
+  $msgs = menu_import_get_messages();
+
   $total_items = $result['new_nodes'] + $result['matched_nodes'] + $result['external_links'] + $result['unknown_links'];
-  drupal_set_message(t('Items imported: @items.', array('@items' => $total_items)));
+  drupal_set_message(t($msgs['items_imported'], array('@count' => $total_items)));
 
-  // Show error messages.
-  if ($result['failed']) {
-    drupal_set_message(t('Menu item creation failed: @count items.', array('@count' => $result['failed'])), 'error');
-  }
-
-  // Show OK messages.
-  if ($result['new_nodes']) {
-    drupal_set_message(t('New content created: @count items.', array('@count' => $result['new_nodes'])));
-  }
-  if ($result['matched_nodes']) {
-    drupal_set_message(t('Existing content matched: @count items.', array('@count' => $result['matched_nodes'])));
-  }
-  if ($result['deleted_menu_items']) {
-    drupal_set_message(t('Menu items deleted: @count items.', array('@count' => $result['deleted_menu_items'])));
-  }
-
-  // Show additional statistic messages.
-  if ($result['external_links']) {
-    drupal_set_message(t('External URLs: @count items.', array('@count' => $result['external_links'])));
-  }
-  if ($result['unknown_links']) {
-    drupal_set_message(t('Content not found: @count items.', array('@count' => $result['unknown_links'])));
+  foreach ($result as $type => $value) {
+    $msg_type = $type == 'failed' ? 'error' : 'status';
+    drupal_set_message(t($msgs[$type], array('@count' => $value)), $msg_type);
   }
 }
 
@@ -308,7 +298,7 @@ function menu_import_preview($menu, array $options) {
 
   $descriptions[] = t('Import @count items into "@menu_title" menu (@menu_name)',
     array(
-      '@count' => count($menu) - 2, // Minus errors and root item.
+      '@count' => count($menu) - 3, // Minus errors/warnings and root item.
       '@menu_title' => $menus[$menu_name],
       '@menu_name' => $menu_name
     ));
