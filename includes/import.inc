@@ -181,7 +181,8 @@ function menu_import_parse_menu_from_file($uri, $menu_name, array $options) {
   );
 
   // Keep track of actual weights per level.
-  $weights = array();
+  // We have to append to existing items not to mess up the menu.
+  $weights = array(0 => menu_import_get_max_weight($menu_name));
   // Keep track of actual parents per level.
   $parents = array();
 
@@ -488,4 +489,16 @@ function menu_import_get_messages() {
     'external_links'      => 'External URLs: @count items.',
     'unknown_links'       => 'Content not found: @count items.'
   );
+}
+
+/**
+ * Get max weight for first level.
+ */
+function menu_import_get_max_weight($menu_name) {
+  $weight = db_query("SELECT MAX(weight) FROM {menu_links} WHERE menu_name = :menu_name AND depth = 1",
+    array(':menu_name' => $menu_name))->fetchField();
+  if (empty($weight)) {
+    $weight = 0;
+  }
+  return $weight;
 }
