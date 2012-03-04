@@ -257,6 +257,10 @@ function menu_import_display_result(array $result) {
   $total_items = $result['new_nodes'] + $result['matched_nodes'] + $result['external_links'] + $result['unknown_links'];
   drupal_set_message(t($msgs['items_imported'], array('@count' => $total_items)));
 
+  if (empty($result['failed'])) {
+    unset($result['failed']);
+  }
+  
   foreach ($result as $type => $value) {
     $msg_type = $type == 'failed' ? 'error' : 'status';
     drupal_set_message(t($msgs[$type], array('@count' => $value)), $msg_type);

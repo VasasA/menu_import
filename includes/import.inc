@@ -19,52 +19,53 @@
  *   An array('nid' => '<node_id_or_false>', 'link_path' => '<path_if_exists_or_empty>').
  */
 function _menu_import_lookup_path($path, $title, array $options) {
-  $nid = $result['nid'] = $is_node = FALSE;
+  $result = array(
+    'nid' => FALSE,
+    'link_path' => ''
+  );
 
-  // Search by alias by default.
+  // Search by alias by default, but use only
+  // path without query/argument part.
+  $query = '';
+  $path = explode('?', $path);
+  if (count($path) != 1) {
+    $query = '?' . $path[1];
+  }
+  $path = $path[0];
+
+  // Does an alias exist in the system?
   $system_url = drupal_lookup_path('source', $path);
-  // No such alias in the system.
   if (!$system_url) {
     $system_url = $path;
   }
 
-  // Detect Drupal's direct node URI
-  if (drupal_substr($system_url, 0, 4) == 'node') {
-    $is_node = TRUE;
-    $nid = drupal_substr($system_url, 5);
-    if (!is_numeric($nid)) {
-      $nid = FALSE;
+  // Try to detect a direct path to node.
+  $matches = array();
+  if (preg_match('/^node\/(\d+)/', $system_url, $matches)) {
+    // The node exists and we can safely link to it.
+    if (drupal_valid_path($system_url)) {
+      if ($options['link_to_content']) {
+        $result['link_path'] = $system_url . $query;
+        $result['nid'] = $matches[1];
+      }
     }
-  }
+    // The node doesn't exist and we have to find it by title.
+    elseif ($options['link_to_content']) {
+      $nid = db_select('node', 'n')
+        ->fields('n', array('nid'))
+        ->condition('n.title', $title)
+        ->execute()->fetchField();
 
-  // Search node by title if nothing found.
-  if (!$nid) {
-    $nid = db_select('node', 'n')
-      ->fields('n', array('nid'))
-      ->condition('n.title', $title)
-      ->execute()->fetchField();
-  }
-
-  // The menu item links to a node.
-  if ($nid || $is_node) {
-    $system_url = 'node/' . $nid;
-    if (drupal_valid_path($system_url) && $options['link_to_content']) {
-      // The node exists and we can safely link to it.
-      $result['link_path'] = $system_url;
-      $result['nid'] = $nid;
-    }
-    else {
-      // The node doesn't exist, do not link to it.
-      $result['link_path'] = '';
+      // The node exists.
+      if ($nid) {
+        $result['link_path'] = 'node/' . $nid . $query;
+        $result['nid'] = $nid;
+      }
     }
   }
-  // The menu item links to something different on the site.
+  // Is there any registered path?
   elseif (drupal_valid_path($system_url)) {
-    $result['link_path'] = $system_url;
-  }
-  // The menu item has no link at all.
-  else {
-    $result['link_path'] = '';
+    $result['link_path'] = $system_url . $query;
   }
 
   return $result;
@@ -339,7 +340,7 @@ function menu_import_save_menu($menu, $options) {
             else {
               menu_import_delete_menuitem($menuitem);
               $nodes_matched_cnt++;
-              $menuitem['link_path'] = 'node/' . $menuitem['nid'];
+//              $menuitem['link_path'] = 'node/' . $menuitem['nid'];
             }
           }
         }
