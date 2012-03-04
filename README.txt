@@ -3,22 +3,29 @@ $Id
 WHAT IS THIS MODULE FOR?
 You may need it when you want to:
 
-1. Create a multilevel menu, without specific details about where the menu links
+- export and/or import menu(s)
+
+- create a menu, without specific details about where the menu links
   will point to. You may need this when you want to create a prototype of your future site,
   or when you haven't decided yet where each menu link will point to. The module will
-  create the menu for you using optionally provided external or local Drupal URLs.
+  create the menu for you using optionally provided external URLs or local Drupal paths.
   See the import file structure for details.
 
-2. Create a multilevel menu with some/all links pointing to some stub content.
+- create a menu with some/all links pointing to stub content.
   You may need this when you want to create a prototype of your future site,
   and you haven't decided yet about the content but you need some tangible content
   to be available.
 
-3. Update an existing menu by adding new items. You may add new items the same way as described
+- update an existing menu by adding new items. You may add new items the same way as described
   in points 1 and 2 above.
 
+- reorganize existing menu by means of a text file instead of manual dragging.
 
-USAGE INSTRUCTIONS:
+- create a site from scratch using exportables (features) and need a way to create menus
+
+USAGE INSTRUCTIONS
+
+IMPORT
 
 1. Install the module and configure permissions to allow import.
 
@@ -69,3 +76,13 @@ USAGE INSTRUCTIONS:
 6. Submit and see the new menu structure with stub content created automatically.
 
 7. Enjoy your saved time ;)
+
+EXPORT
+
+1. Go to "Structure" -> "Menus"
+
+2. Select "Menu export" tab.
+
+3. Select the menu and your options.
+
+4. Save the file to some place (and probably use it later for import)
