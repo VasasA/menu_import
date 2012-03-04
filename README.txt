@@ -1,6 +1,7 @@
 $Id
 
 WHAT IS THIS MODULE FOR?
+
 You may need it when you want to:
 
 - export and/or import menu(s)
@@ -72,6 +73,10 @@ IMPORT
 4. Select "Menu import" tab.
 
 5. Select the site map file created earlier and specify necessary options.
+   You may want to create empty nodes on import here. If this is the case,
+   you have to specify additional information. A handy feature could be creation
+   stub nodes with path aliases instead of default node/x. Be sure to provide
+  aliases and choose "Create path alias" option.
 
 6. Submit and see the new menu structure with stub content created automatically.
 

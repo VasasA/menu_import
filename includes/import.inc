@@ -327,21 +327,18 @@ function menu_import_save_menu($menu, $options) {
       else {
         // Node exists.
         if ($menuitem['nid']) {
-          if ($options['create_content'] || $options['link_to_content']) {
-            // Need to create new content since no linking was selected.
-            if (!$options['link_to_content']) {
-              menu_import_delete_menuitem($menuitem);
-              $options['node_title'] = $menuitem['link_title'];
-              $nid = menu_import_create_node($options);
-              $menuitem['nid'] = $nid;
-              $nodes_new_cnt++;
-              $menuitem['link_path'] = 'node/' . $menuitem['nid'];
-            }
-            else {
-              menu_import_delete_menuitem($menuitem);
-              $nodes_matched_cnt++;
-//              $menuitem['link_path'] = 'node/' . $menuitem['nid'];
-            }
+          // Need to create new content since no linking was selected.
+          if ($options['create_content']) {
+            menu_import_delete_menuitem($menuitem);
+            $options['node_title'] = $menuitem['link_title'];
+            $nid = menu_import_create_node($options);
+            $menuitem['nid'] = $nid;
+            $nodes_new_cnt++;
+            $menuitem['link_path'] = 'node/' . $menuitem['nid'];
+          }
+          elseif ($options['link_to_content']) {
+            menu_import_delete_menuitem($menuitem);
+            $nodes_matched_cnt++;
           }
         }
         // Node doesn't exist.
@@ -350,6 +347,10 @@ function menu_import_save_menu($menu, $options) {
           if ($options['create_content']) {
             menu_import_delete_menuitem($menuitem);
             $options['node_title'] = $menuitem['link_title'];
+            if ($options['node_alias'] && !empty($menuitem['path'])
+                && drupal_substr($menuitem['path'], 0, 4) != 'node') {
+              $options['path_alias'] = $menuitem['path'];
+            }
             $nid = menu_import_create_node($options);
             $menuitem['nid'] = $nid;
             $nodes_new_cnt++;
@@ -415,6 +416,10 @@ function menu_import_create_node($options) {
 
   $node->status = $options['node_status'];
   $node->uid    = $options['node_author'];
+
+  if (!empty($options['path_alias'])) {
+    $node->path = array('alias' => $options['path_alias']);
+  }
 
   node_save($node);
   return $node->nid;

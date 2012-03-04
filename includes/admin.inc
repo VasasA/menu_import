@@ -125,6 +125,13 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#default_value' => !empty($form_state['values']['node_status']) ? $form_state['values']['node_status'] : 1,
   );
 
+  $form['node']['node_alias'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Create path alias'),
+    '#description' => t('Check to use the provided path as alias. The path has to go right after the title in your text file.'),
+    '#default_value' => !empty($form_state['values']['node_status']) ? $form_state['values']['node_status'] : 1,
+  );
+
   drupal_add_js(
     '(function($) {
       $(function() {
@@ -185,6 +192,7 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'node_body' => $form_state['values']['node_body'],
     'node_author' => $form_state['values']['node_author'],
     'node_status' => $form_state['values']['node_status'],
+    'node_alias' => $form_state['values']['node_alias'],
   );
 
   module_load_include('inc', 'menu_import', 'includes/import');
@@ -260,7 +268,7 @@ function menu_import_display_result(array $result) {
   if (empty($result['failed'])) {
     unset($result['failed']);
   }
-  
+
   foreach ($result as $type => $value) {
     $msg_type = $type == 'failed' ? 'error' : 'status';
     drupal_set_message(t($msgs[$type], array('@count' => $value)), $msg_type);
@@ -319,6 +327,10 @@ function menu_import_preview($menu, array $options) {
 
     $status = $options['node_status'] ? t('published') : t('not published');
     $descriptions[] = t('Content status: @status', array('@status' => $status));
+
+    if ($options['node_alias']) {
+      $descriptions[] = t('Path aliases will be created.');
+    }
   }
 
   $rows = array();
