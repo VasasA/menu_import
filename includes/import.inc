@@ -103,12 +103,16 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
 
   // Only * and - are allowed as indentation characters.
   // URL aliases are separated from title by vertical bar (|) or semi-colon (;).
-  preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)([\|;]{1}[^\|;]*)?([\|;]{1}[^\|;]*)?/', $line, $matches);
+  $opt_re = '([\|;]{1}[^\|;]*)?';
+  $matches = array();
+  preg_match('/^([\-]+|[\*]+)?(\s+)?([^\|;]*)' . str_repeat($opt_re, 3) . '/', $line, $matches);
 
   $level = strlen($matches[1]); // No sense to use drupal_strlen on indentation.
   $title = trim(strip_tags($matches[3]));
   $path  = isset($matches[4]) ? trim(str_replace(array('|', ';'), '', $matches[4])) : '';
   $description = isset($matches[5]) ? trim(str_replace(array('|', ';'), '', $matches[5])) : '';
+  $expanded = !empty($matches[6]) && stripos($matches[6], 'expanded') !== FALSE;
+  $disabled = !empty($matches[6]) && stripos($matches[6], 'disabled') !== FALSE;
 
   // Skip empty items
   if (!strlen($title)) {
@@ -151,6 +155,14 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
 
   if ($description) {
     $menuitem['description'] = $description;
+  }
+
+  if ($disabled) {
+    $menuitem['hidden'] = 1;
+  }
+
+  if ($expanded) {
+    $menuitem['expanded'] = 1;
   }
 
   return $menuitem;
@@ -316,12 +328,22 @@ function menu_import_save_menu($menu, $options) {
       $menuitem['plid'] = $menu[$menuitem['parent']]['mlid'];
       $menuitem['menu_name'] = $menu_name;
 
+      // Determine if this is the path to view a node (no edit or whatever).
+      $link_path = $menuitem['link_path'];
+      if ($link_path && arg(0, $link_path) == 'node'
+            && is_numeric(arg(1, $link_path)) && !arg(2, $link_path)) {
+        $node_path = true;
+      }
+      else {
+        $node_path = false;
+      }
+
       // Do not create nodes for external links.
       if ($menuitem['external']) {
         $external_links_cnt++;
       }
-      // Internal link to not-a-node content.
-      elseif ($menuitem['link_path'] && substr($menuitem['link_path'], 0, 4) != 'node') {
+      // Internal link to not-a-content (settings, custom module path etc).
+      elseif ($link_path && !$node_path) {
         $unknown_links_cnt++;
       }
       // Handle links to nodes or missing links.
@@ -349,7 +371,7 @@ function menu_import_save_menu($menu, $options) {
             menu_import_delete_menuitem($menuitem);
             $options['node_title'] = $menuitem['link_title'];
             if ($options['node_alias'] && !empty($menuitem['path'])
-                && drupal_substr($menuitem['path'], 0, 4) != 'node') {
+                && arg($menuitem['path'], 0) != 'node') {
               $options['path_alias'] = $menuitem['path'];
             }
             $nid = menu_import_create_node($options);
@@ -364,6 +386,11 @@ function menu_import_save_menu($menu, $options) {
             $menuitem['link_path'] = '<front>';
           }
         }
+      }
+
+      // Ensure we link to at least front page.
+      if (empty($menuitem['link_path'])) {
+        $menuitem['link_path'] = '<front>';
       }
 
       // Save description if available.
@@ -420,6 +447,10 @@ function menu_import_create_node($options) {
 
   if (!empty($options['path_alias'])) {
     $node->path = array('alias' => $options['path_alias']);
+    // Make sure pathauto is not being used
+    if (module_exists('pathauto')) {
+      $node->path['pathauto'] = FALSE;
+    }
   }
 
   node_save($node);
