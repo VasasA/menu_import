@@ -77,7 +77,6 @@ class MenuImportTestCase extends DrupalWebTestCase {
  <tr class="odd"><td><div class="indentation">&nbsp;</div><div class="indentation">&nbsp;</div>Page 211</td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
 </tbody>';
     $this->assertRaw($expected_menu, 'Menu structure has been parsed.');
-    file_put_contents('/tmp/mi.log', $this->drupalGetContent());
 
     // Get hidden form fields for post.
     $post_data = $this->getFormHiddenFields();
@@ -85,7 +84,6 @@ class MenuImportTestCase extends DrupalWebTestCase {
     // Post to the same page.
     $this->drupalPost(NULL, $post_data, t('Import'));
 
-    file_put_contents('/tmp/mi.log', "\n==============\n" . $this->drupalGetContent(), FILE_APPEND);
     // Check report.
     $this->assertText(t('Items imported: @items.', array('@items' => $items_total)));
     $this->assertText(t('New content created: @count items.', array('@count' => $items_total)));
