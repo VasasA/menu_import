@@ -116,10 +116,12 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     }
     $options = count($options) ? '|' . join(',', $options) : '';
 
+    // Use alias if exists.
+    $alias = drupal_lookup_path('alias', $link['link_path']);
     $output .=
       $indentation
       . $link['link_title']
-      . '|' . $link['link_path']
+      . '|' . ($alias ? $alias : $link['link_path'])
       . '|' . (!empty($link['description']) ? $link['description'] : '')
       . $options
       . $me_options['line_ending'];
