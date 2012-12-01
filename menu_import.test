@@ -20,9 +20,8 @@ class MenuImportTestCase extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp('menu_import');
-    $this->drupalCreateContentType(array('type' => 'page', 'name' => 'Page'));
     $this->privileged_user = $this->drupalCreateUser(array(
-      'import menu from file',
+      'import menu from file', 'administer menu'
       ));
     $this->drupalLogin($this->privileged_user);
   }

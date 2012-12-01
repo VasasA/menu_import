@@ -30,39 +30,60 @@ function menu_import_form($form, &$form_state) {
  * Step 1 of menu import process.
  */
 function menu_import_form_step1(&$form, &$form_state) {
-  $form['main'] = array(
-    '#type' => 'fieldset',
-    '#title' => t('General settings'),
-  );
-  $form['main']['menu_name'] = array(
+  $form['menu_name'] = array(
     '#type' => 'select',
-    '#title' => t('Menu to import in'),
+    '#title' => t('Target menu'),
     '#options' => menu_get_menus(),
     '#description' => t('This menu will contain the imported items.'),
     '#required' => TRUE,
     '#default_value' => !empty($form_state['values']['menu_name']) ? $form_state['values']['menu_name'] : NULL,
   );
-  $form['main']['upload'] = array(
-    '#type' => 'file',
-    '#title' => t('Menu file'),
-    '#description' => t('File containing specially indented text.'),
+
+  $form['import_source'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Source'),
+    '#description' => t('The source file/text must contain menu definition. See !help for format details.',
+        array('!help' => l(t('help'), 'admin/help/menu_import'))),
   );
 
-  $form['main']['create_content'] = array(
+  $form['import_source']['upload'] = array(
+    '#type' => 'file',
+    '#title' => t('Menu file'),
+  );
+
+  $form['import_source']['text_import'] = array(
+    '#type' => 'fieldset',
+    '#collapsible' => TRUE,
+    '#collapsed' => TRUE,
+    '#title' => t('Text import'),
+    '#description' => t('Type/paste menu definition here'),
+  );
+
+  $form['import_source']['text_import']['text'] = array(
+    '#type' => 'textarea',
+    '#default_value' => !empty($form_state['values']['text']) ? $form_state['values']['text'] : '',
+  );
+
+  $form['options'] = array(
+    '#type' => 'fieldset',
+    '#title' => t('Options'),
+  );
+
+  $form['options']['create_content'] = array(
     '#type' => 'checkbox',
     '#title' => t('Create initial content'),
     '#description' => t('Create initial content if none was found.'),
     '#default_value' => !empty($form_state['values']['create_content']) ? $form_state['values']['create_content'] : 0,
   );
 
-  $form['main']['link_to_content'] = array(
+  $form['options']['link_to_content'] = array(
     '#type' => 'checkbox',
     '#title' => t('Link to existing content'),
     '#description' => t('Look for existing content by path or title.'),
     '#default_value' => !empty($form_state['values']['link_to_content']) ? $form_state['values']['link_to_content'] : 0,
   );
 
-  $form['main']['remove_menu_items'] = array(
+  $form['options']['remove_menu_items'] = array(
     '#type' => 'checkbox',
     '#title' => t('Remove existing menu items'),
     '#description' => t('Remove current menu items before running import.'),
@@ -143,6 +164,10 @@ function menu_import_form_step1(&$form, &$form_state) {
             $("#edit-node").fadeOut();
           }
         });
+        // Show text input area if it has any contents.
+        if ($("textarea[name=text]").val()) {
+          $("#edit-text-import a.fieldset-title").click();
+        };
       });
     })(jQuery)',
     'inline'
@@ -169,12 +194,15 @@ function menu_import_form_step1_validate($form, &$form_state) {
   $validators = array(
     'file_validate_extensions' => array('txt'),
   );
-  $file = file_save_upload('upload', $validators);
-  if (!$file) {
-    form_set_error('upload', t('You must select a valid text file to upload.'));
-  }
-  else {
-    $form_state['values']['file'] = $file;
+
+  if (empty($form_state['values']['text'])) {
+    $file = file_save_upload('upload', $validators);
+    if (!$file) {
+      form_set_error('upload', t('You must select a valid text file to upload.'));
+    }
+    else {
+      $form_state['values']['file'] = $file;
+    }
   }
 }
 
@@ -182,8 +210,6 @@ function menu_import_form_step1_validate($form, &$form_state) {
  * Step 1 form submit handler.
  */
 function menu_import_form_step1_submit($form, &$form_state) {
-  $file = $form_state['values']['file'];
-
   $form_state['storage']['options'] = array(
     'create_content' => $form_state['values']['create_content'],
     'link_to_content' => $form_state['values']['link_to_content'],
@@ -196,8 +222,18 @@ function menu_import_form_step1_submit($form, &$form_state) {
   );
 
   module_load_include('inc', 'menu_import', 'includes/import');
-  $menu = menu_import_parse_menu_from_file($file->uri, $form_state['values']['menu_name'], $form_state['storage']['options']);
-  file_delete($file);
+
+  $text = $form_state['values']['text'];
+  $menu_name = $form_state['values']['menu_name'];
+  $options = $form_state['storage']['options'];
+  if ($text) {
+    $menu = menu_import_parse_menu_from_string(trim($text), $menu_name, $options);
+  }
+  else {
+    $file = $form_state['values']['file'];
+    $menu = menu_import_parse_menu_from_file($file->uri, $menu_name, $options);
+    file_delete($file);
+  }
 
   if (!empty($menu['errors'])) {
     foreach ($menu['errors'] as $error) {
