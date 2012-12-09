@@ -102,28 +102,29 @@ function menu_import_export_menu($menu_name, $options) {
 function _menu_import_export_recurse($tree, $level, &$output) {
   global $me_options;
 
-  foreach ($tree as $index => $data) {
+  foreach ($tree as $data) {
     $link = $data['link'];
-
     $indentation = str_repeat('-', $level);
-
-    $options = array();
-    if ($link['hidden']) {
-      $options[] = 'disabled';
-    }
-    if ($link['expanded']) {
-      $options[] = 'expanded';
-    }
-    $options = count($options) ? '|' . join(',', $options) : '';
+    $details = array();
 
     // Use alias if exists.
     $alias = drupal_lookup_path('alias', $link['link_path']);
+    $details['url'] = $alias ? $alias : $link['link_path'];
+
+    if (!empty($link['description'])) {
+      $details['description'] = $link['description'];
+    }
+    if ($link['hidden']) {
+      $details['hidden'] = TRUE;
+    }
+    if ($link['expanded']) {
+      $details['expanded'] = TRUE;
+    }
+
     $output .=
       $indentation
       . $link['link_title']
-      . '|' . ($alias ? $alias : $link['link_path'])
-      . '|' . (!empty($link['description']) ? $link['description'] : '')
-      . $options
+      . ' ' . json_encode($details)
       . $me_options['line_ending'];
 
     if ($data['below']) {

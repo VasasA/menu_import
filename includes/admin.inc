@@ -405,15 +405,15 @@ function _menu_import_preview_row_recurse(&$menu, $index, $level, $options) {
   $rows = array();
 
   $title  = theme('indentation', array('size' => $level));
-  $title  .= check_plain($menu[$index]['link_title']);
+  $title  .= $menu[$index]['link_title'];
   $exists = $menu[$index]['nid'] ? t('Yes') : t('No');
   $weight = $menu[$index]['weight'];
   $path       = !empty($menu[$index]['path']) ? $menu[$index]['path'] : ' - ';
   $link_path  = !empty($menu[$index]['link_path']) ? $menu[$index]['link_path'] : ' - ';
-  $description= isset($menu[$index]['description']) ? $menu[$index]['description'] : ' - ';
+  $description= isset($menu[$index]['description']) ? $menu[$index]['description'] : '';
 
   $row_data = array(
-    array('data' => $title),
+    array('data' => '<span title="' . check_plain($description) . '">' . $title . '</span>'),
     array('data' => $exists),
     array('data' => check_url($path)),
     array('data' => check_url($link_path))
