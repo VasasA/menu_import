@@ -131,6 +131,15 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     'level' => 0,
   );
 
+  // Set default language
+  if (module_exists('i18n_menu')) {
+    $menuitem['language'] = $options['language'];
+  }
+  $langs = array(LANGUAGE_NONE);
+  $langs = array_merge($langs, array_keys(language_list()));
+
+  $path = $description = $expanded = $hidden = $language = '';
+
   // JSON is used.
   // @todo: make the input JSON not so strict.
   if (($json_start = strpos($line, '{"')) != 0) {
@@ -147,6 +156,8 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
       $description = !empty($details->description) ? trim($details->description) : '';
       $expanded = !empty($details->expanded);
       $hidden = !empty($details->hidden);
+      $language = !empty($details->lang) && in_array($details->lang, $langs)
+                    ? $details->lang : NULL;
     }
     else {
       return _menu_import_mark_error_item($menuitem, t('malformed item details'), $line);
@@ -155,7 +166,6 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   // No JSON is provided, only level and title are specified.
   else {
     $level_title = _menu_import_parse_level_title($line);
-    $path = $description = $expanded = $hidden = '';
   }
 
   if (!$level_title) {
@@ -205,13 +215,14 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   if ($description) {
     $menuitem['description'] = $description;
   }
-
   if ($hidden) {
     $menuitem['hidden'] = 1;
   }
-
   if ($expanded) {
     $menuitem['expanded'] = 1;
+  }
+  if ($language) {
+    $menuitem['language'] = $language;
   }
 
   return $menuitem;
@@ -484,7 +495,7 @@ function menu_import_create_node($options) {
   $node = new stdClass();
 
   $node->type     = $options['node_type'];
-  $node->language = LANGUAGE_NONE;
+  $node->language = $options['language'];
   $node->title    = $options['node_title'];
 
   $node->body[$node->language][0]['value']   = $options['node_body'];

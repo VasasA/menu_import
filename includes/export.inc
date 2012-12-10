@@ -28,6 +28,15 @@ function menu_import_export_form($form, &$form_state) {
     '#required' => TRUE,
   );
 
+  if (module_exists('i18n_menu')) {
+    $form['export_language'] = array(
+      '#type' => 'checkbox',
+      '#title' => t('Export language'),
+      '#description' => t('Language setting provided by i18n_menu module will be exported.'),
+      '#default_value' => !empty($form_state['values']['export_language']) ? $form_state['export_language'] : 1,
+    );
+  }
+
   $form['sumbit'] = array(
     '#type' => 'submit',
     '#value' => t('Export'),
@@ -41,7 +50,9 @@ function menu_import_export_form($form, &$form_state) {
  */
 function menu_import_export_form_submit($form, &$form_state) {
   $menu_name = $form_state['values']['menu_name'];
-  $options = array();
+  $options = array(
+    'export_language' => $form_state['values']['export_language']
+  );
 
   switch ($form_state['values']['line_ending']) {
     case 'unix':
@@ -119,6 +130,9 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     }
     if ($link['expanded']) {
       $details['expanded'] = TRUE;
+    }
+    if ($me_options['export_language']) {
+      $details['lang'] = $link['language'];
     }
 
     $output .=

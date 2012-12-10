@@ -69,18 +69,11 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#title' => t('Options'),
   );
 
-  $form['options']['create_content'] = array(
-    '#type' => 'checkbox',
-    '#title' => t('Create initial content'),
-    '#description' => t('Create initial content if none was found.'),
-    '#default_value' => !empty($form_state['values']['create_content']) ? $form_state['values']['create_content'] : 0,
-  );
-
   $form['options']['link_to_content'] = array(
     '#type' => 'checkbox',
     '#title' => t('Link to existing content'),
     '#description' => t('Look for existing content by path or title.'),
-    '#default_value' => !empty($form_state['values']['link_to_content']) ? $form_state['values']['link_to_content'] : 0,
+    '#default_value' => !empty($form_state['values']['link_to_content']) ? $form_state['values']['link_to_content'] : 1,
   );
 
   $form['options']['remove_menu_items'] = array(
@@ -88,6 +81,27 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#title' => t('Remove existing menu items'),
     '#description' => t('Remove current menu items before running import.'),
     '#default_value' => !empty($form_state['values']['remove_menu_items']) ? $form_state['values']['remove_menu_items'] : 0,
+  );
+
+  $form['options']['create_content'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Create initial content'),
+    '#description' => t('Create initial content if none was found.'),
+    '#default_value' => !empty($form_state['values']['create_content']) ? $form_state['values']['create_content'] : 0,
+  );
+
+  $langs = language_list();
+  $lang_opts = array_map(function($item) { return $item->name; }, $langs);
+  $form['options']['language'] = array(
+    '#type' => 'select',
+    '#title' => t('Default language'),
+    '#description' =>
+      t('Here you can set the default language of newly created content and/or menu items.'
+      . ' If menu item has its own valid language it will override the default one.'),
+    '#empty_option' => t('- Not defined -'),
+    '#empty_value'  => LANGUAGE_NONE,
+    '#options' => $lang_opts,
+    '#required' => FALSE,
   );
 
   $form['node'] = array(
@@ -214,6 +228,7 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'create_content' => $form_state['values']['create_content'],
     'link_to_content' => $form_state['values']['link_to_content'],
     'remove_menu_items' => $form_state['values']['remove_menu_items'],
+    'language' => $form_state['values']['language'],
     'node_type' => $form_state['values']['node_type'],
     'node_body' => $form_state['values']['node_body'],
     'node_author' => $form_state['values']['node_author'],
@@ -368,6 +383,8 @@ function menu_import_preview($menu, array $options) {
       $descriptions[] = t('Path aliases will be created.');
     }
   }
+
+  $descriptions[] = t('Language: @lang', array('@lang' => $options['language'] == LANGUAGE_NONE ? t('not defined') : $options['language']));
 
   $rows = array();
   $depth = 0;
