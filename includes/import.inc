@@ -135,8 +135,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   if (module_exists('i18n_menu')) {
     $menuitem['language'] = $options['language'];
   }
-  $langs = array(LANGUAGE_NONE);
-  $langs = array_merge($langs, array_keys(language_list()));
+  $langs = array_keys(language_list());
 
   $path = $description = $expanded = $hidden = $language = '';
 
@@ -223,6 +222,8 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   }
   if ($language) {
     $menuitem['language'] = $language;
+    // Important when setting the language, otherwise it'll be ignored.
+    $menuitem['customized'] = 1;
   }
 
   return $menuitem;
