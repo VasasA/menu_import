@@ -91,7 +91,11 @@ function menu_import_form_step1(&$form, &$form_state) {
   );
 
   $langs = language_list();
-  $lang_opts = array_map(function($item) { return $item->name; }, $langs);
+  // We do not use lambda function here for the sake of 5.2.x support.
+  function language_list_get_names($item) {
+    return $item->name;
+  }
+  $lang_opts = array_map('language_list_get_names', $langs);
   $form['options']['language'] = array(
     '#type' => 'select',
     '#title' => t('Default language'),
