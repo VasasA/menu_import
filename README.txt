@@ -80,8 +80,6 @@ IMPORT
 
 6. Submit and see the new menu structure with stub content created automatically.
 
-7. Enjoy your saved time ;)
-
 EXPORT
 
 1. Go to "Structure" -> "Menus"
@@ -90,4 +88,4 @@ EXPORT
 
 3. Select the menu and your options.
 
-4. Save the file to some place (and probably use it later for import)
+4. Save the file (and probably use it later for import)
