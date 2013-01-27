@@ -147,6 +147,18 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#default_value' => !empty($form_state['values']['node_body']) ? $form_state['values']['node_body'] : $default_body_value,
   );
 
+  $formats = filter_formats();
+  function filter_formats_get_names($item) {
+    return $item->name;
+  }
+  $filter_opts = array_map('filter_formats_get_names', $formats);
+  $form['node']['node_format'] = array(
+    '#type' => 'select',
+    '#options' => $filter_opts,
+    '#title' => t('Body format'),
+    '#default_value' => !empty($form_state['values']['node_format']) ? $form_state['values']['node_format'] : 'filtered_html',
+  );
+
   $users = db_query('SELECT uid, name FROM {users} WHERE uid <> 0')->fetchAllKeyed();
 
   $form['node']['node_author'] = array(
@@ -235,6 +247,7 @@ function menu_import_form_step1_submit($form, &$form_state) {
     'language' => $form_state['values']['language'],
     'node_type' => $form_state['values']['node_type'],
     'node_body' => $form_state['values']['node_body'],
+    'node_format' => $form_state['values']['node_format'],
     'node_author' => $form_state['values']['node_author'],
     'node_status' => $form_state['values']['node_status'],
     'node_alias' => $form_state['values']['node_alias'],

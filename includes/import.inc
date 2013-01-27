@@ -100,6 +100,30 @@ function _menu_import_mark_error_item($item, $error, $original) {
 }
 
 /**
+ * Returns 1 if body is translatable (entity_translation enabled and configured)
+ * and 0 otherwise.
+ */
+function _menu_import_body_is_translatable() {
+  $body_trans = &drupal_static(__FUNCTION__, NULL);
+
+  if (is_null($body_trans)) {
+    if (db_field_exists('field_config', 'translatable')) {
+      $body_trans =
+        db_select('field_config', 'fc')
+          ->fields('fc', array('translatable'))
+          ->condition('field_name', 'body')
+          ->execute()
+          ->fetchColumn();
+    }
+    else {
+      $body_trans = 0;
+    }
+  }
+
+  return $body_trans;
+}
+
+/**
  * Parse a line of text containing the menu structure.
  * Only * and - are allowed as indentation characters.
  * Menu item definition may or may not contain details in JSON format.
@@ -499,9 +523,10 @@ function menu_import_create_node($options) {
   $node->language = $options['language'];
   $node->title    = $options['node_title'];
 
-  $node->body[$node->language][0]['value']   = $options['node_body'];
-  $node->body[$node->language][0]['summary'] = text_summary($options['node_body']);
-  $node->body[$node->language][0]['format']  = 'filtered_html';
+  $body_lang = _menu_import_body_is_translatable() ? $node->language : LANGUAGE_NONE;
+  $node->body[$body_lang][0]['value']   = $options['node_body'];
+  $node->body[$body_lang][0]['summary'] = text_summary($options['node_body']);
+  $node->body[$body_lang][0]['format']  = $options['node_format'];
 
   $node->status = $options['node_status'];
   $node->uid    = $options['node_author'];
