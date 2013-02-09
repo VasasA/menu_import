@@ -81,7 +81,7 @@ function _menu_import_parse_level_title($line) {
   $matches = array();
   if (preg_match('/^([\-]+|[\*]+)?(\s+)?(.*)$/', $line, $matches)) {
     $level = strlen($matches[1]); // No sense to use drupal_strlen on indentation.
-    $title = check_plain(trim($matches[3]));
+    $title = trim($matches[3]);
 
     return array($level, $title);
   }
