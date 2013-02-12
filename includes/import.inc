@@ -435,25 +435,25 @@ function menu_import_save_menu($menu, $options) {
       else {
         // Node exists.
         if ($menuitem['nid']) {
-          // Need to create new content since no linking was selected.
-          if ($options['create_content']) {
-            menu_import_delete_menuitem($menuitem);
+          // Try to link to existing content first.
+          if ($options['link_to_content']) {
+            menu_import_delete_node_menuitem($menuitem);
+            $nodes_matched_cnt++;
+          }
+          // We need to create new content only if no linking was selected.
+          elseif ($options['create_content']) {
+            menu_import_delete_node_menuitem($menuitem);
             $options['node_title'] = $menuitem['link_title'];
             $nid = menu_import_create_node($options);
             $menuitem['nid'] = $nid;
             $nodes_new_cnt++;
             $menuitem['link_path'] = 'node/' . $menuitem['nid'];
           }
-          elseif ($options['link_to_content']) {
-            menu_import_delete_menuitem($menuitem);
-            $nodes_matched_cnt++;
-          }
         }
         // Node doesn't exist.
         else {
           // Create new link and node.
           if ($options['create_content']) {
-            menu_import_delete_menuitem($menuitem);
             $options['node_title'] = $menuitem['link_title'];
             if ($options['node_alias'] && !empty($menuitem['path'])
                 && arg($menuitem['path'], 0) != 'node') {
@@ -466,7 +466,6 @@ function menu_import_save_menu($menu, $options) {
           }
           // Recreate menu item.
           else {
-            menu_import_delete_menuitem($menuitem);
             $unknown_links_cnt++;
             $menuitem['link_path'] = '<front>';
           }
@@ -584,11 +583,13 @@ function menu_import_delete_menuitems($menu_name, $with_nodes = FALSE) {
  * @param $menuitem
  *   Array describing the menu item.
  */
-function menu_import_delete_menuitem($menuitem) {
-  db_delete('menu_links')
-    ->condition('menu_name', $menuitem['menu_name'])
-    ->condition('link_path', 'node/' . $menuitem['nid'])
-    ->execute();
+function menu_import_delete_node_menuitem($menuitem) {
+  $processed_items = &drupal_static(__FUNCTION__, array());
+  $path = 'node/' . $menuitem['nid'];
+  if (!in_array($path, $processed_items)) {
+    menu_link_delete(NULL, $path);
+    $processed_items[] = $path;
+  }
 }
 
 /**
