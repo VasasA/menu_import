@@ -131,7 +131,7 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     if ($link['expanded']) {
       $details['expanded'] = TRUE;
     }
-    if ($me_options['export_language']) {
+    if (!empty($me_options['export_language'])) {
       $details['lang'] = $link['language'];
     }
 
