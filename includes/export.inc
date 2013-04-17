@@ -127,9 +127,6 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     if (!empty($link['options']['attributes']['title'])) {
       $details['description'] = $link['options']['attributes']['title'];
     }
-    elseif (!empty($link['description'])) {
-      $details['description'] = $link['description'];
-    }
 
     if ($link['hidden']) {
       $details['hidden'] = TRUE;
@@ -138,7 +135,7 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     if ($link['expanded']) {
       $details['expanded'] = TRUE;
     }
-    
+
     if (!empty($me_options['export_language'])) {
       $details['lang'] = $link['language'];
     }
