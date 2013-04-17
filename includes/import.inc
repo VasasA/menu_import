@@ -400,7 +400,8 @@ function menu_import_save_menu($menu, $options) {
   // Delete existing menu items.
   $menu_name = $menu[0]['menu_name'];
   if ($options['remove_menu_items']) {
-    $menu_items_deleted_cnt = menu_import_delete_menuitems($menu_name);
+    $menu_items_deleted_cnt = count(menu_load_links($menu_name));
+    menu_delete_links($menu_name);
   }
 
   $menu[0]['mlid'] = 0;
@@ -534,41 +535,6 @@ function menu_import_create_node($options) {
 
   node_save($node);
   return $node->nid;
-}
-
-/**
- * Delete nodes attached to menu and menu items.
- *
- * @param $menu_name
- *   The machine name of the menu.
- * @param $with_nodes
- *   Delete nodes as well. Not used, reserved for future.
- *
- * @return
- *   Number of items deleted .
- */
-function menu_import_delete_menuitems($menu_name, $with_nodes = FALSE) {
-  $menuitems = db_select('menu_links', 'ml')
-    ->fields('ml', array('mlid', 'link_path'))
-    ->condition('ml.menu_name', $menu_name)
-    ->execute()->fetchAllAssoc('mlid', PDO::FETCH_ASSOC);
-
-  $deleted_cnt = 0;
-  foreach ($menuitems as $menuitem) {
-    db_delete('menu_links')->condition('mlid', $menuitem['mlid'])->execute();
-    if ($with_nodes) {
-      // Delete nodes only
-      $link = explode('/', $menuitem['link_path']);
-      if ($link[0] == 'node' && is_numeric($link[1])) {
-        $nid = $link[1];
-        db_delete('node')->condition('nid', $nid)->execute();
-        db_delete('node_revision')->condition('nid', $nid)->execute();
-      }
-    }
-    $deleted_cnt++;
-  }
-
-  return $deleted_cnt;
 }
 
 /**
