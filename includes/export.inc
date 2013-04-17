@@ -50,9 +50,11 @@ function menu_import_export_form($form, &$form_state) {
  */
 function menu_import_export_form_submit($form, &$form_state) {
   $menu_name = $form_state['values']['menu_name'];
-  $options = array(
-    'export_language' => $form_state['values']['export_language']
-  );
+  $options = array();
+
+  if (!empty($form_state['values']['export_language'])) {
+    $options['export_language'] = $form_state['values']['export_language'];
+  }
 
   switch ($form_state['values']['line_ending']) {
     case 'unix':
@@ -122,15 +124,21 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     $alias = drupal_lookup_path('alias', $link['link_path']);
     $details['url'] = $alias ? $alias : $link['link_path'];
 
-    if (!empty($link['description'])) {
+    if (!empty($link['options']['attributes']['title'])) {
+      $details['description'] = $link['options']['attributes']['title'];
+    }
+    elseif (!empty($link['description'])) {
       $details['description'] = $link['description'];
     }
+
     if ($link['hidden']) {
       $details['hidden'] = TRUE;
     }
+
     if ($link['expanded']) {
       $details['expanded'] = TRUE;
     }
+    
     if (!empty($me_options['export_language'])) {
       $details['lang'] = $link['language'];
     }
