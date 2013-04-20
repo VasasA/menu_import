@@ -37,7 +37,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
    */
   function testBasicFeatures() {
     /**
-     * SUBTEST 1.
+     * SUBTEST #1: import.
      */
     $file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'menu_import') . '/tests/nolinks_3levels.txt';
     $validate_structure = array(
@@ -110,8 +110,32 @@ class MenuImportTestCase extends DrupalWebTestCase {
     array_shift($menu_tree); // Remove "Home" link, Drupal may change this structure!
     $this->validateMenu($validate_structure, $menu_tree);
 
+
     /**
-     * SUBTEST 2.
+     * SUBTEST #2: export.
+     */
+    $post_data = array(
+      'menu_name'   => 'main-menu',
+      'line_ending' => 'unix',
+      'options'     => 1,
+    );
+    $export_url = 'admin/structure/menu/export';
+    $this->drupalPost($export_url, $post_data, t('Export'));
+    $exported_menu = $this->drupalGetContent();
+    $expected_exported_menu =
+'Home {"url":"<front>"}
+Page 1 {"url":"node\/1","description":"Test description"}
+-Page 12 {"url":"admin\/structure\/menu\/import","hidden":true}
+-Page 13 {"url":"admin\/structure\/menu\/export?arg=val"}
+--Page 131 {"url":"node\/3"}
+Page 2 {"url":"node\/2","expanded":true}
+-Page 21 {"url":"node\/4"}
+--Page 211 {"url":"node\/5"}
+';
+    $this->assertEqual($exported_menu, $expected_exported_menu, 'Exported menu ok.');
+
+    /**
+     * SUBTEST #3: import with match by title.
      */
     // Test file settings to validate against.
     $file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'menu_import') . '/tests/nolinks_3levels_reordered.txt';

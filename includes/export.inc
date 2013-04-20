@@ -37,6 +37,13 @@ function menu_import_export_form($form, &$form_state) {
     );
   }
 
+  $form['options'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Export menu item options'),
+    '#description' => t('The value of "options" column in JSON representation.'),
+    '#default_value' => !empty($form_state['values']['options']) ? $form_state['values']['options'] : 0,
+  );
+
   $form['sumbit'] = array(
     '#type' => 'submit',
     '#value' => t('Export'),
@@ -55,6 +62,8 @@ function menu_import_export_form_submit($form, &$form_state) {
   if (!empty($form_state['values']['export_language'])) {
     $options['export_language'] = $form_state['values']['export_language'];
   }
+
+  $options['options'] = $form_state['values']['options'];
 
   switch ($form_state['values']['line_ending']) {
     case 'unix':
@@ -138,6 +147,20 @@ function _menu_import_export_recurse($tree, $level, &$output) {
 
     if (!empty($me_options['export_language'])) {
       $details['lang'] = $link['language'];
+    }
+
+    // Export options.
+    if ($me_options['options']) {
+      // Already exported as description.
+      if (!empty($details['description'])) {
+        unset($link['options']['attributes']['title']);
+      }
+      if (empty($link['options']['attributes'])) {
+         unset($link['options']['attributes']);
+      }
+      if (!empty($link['options'])) {
+        $details['options'] = $link['options'];
+      }
     }
 
     $output .=

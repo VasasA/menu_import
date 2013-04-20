@@ -168,7 +168,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   // @todo: make the input JSON not so strict.
   if (($json_start = strpos($line, '{"')) != 0) {
     $json = substr($line, $json_start);
-    $details = json_decode($json);
+    $details = json_decode($json, TRUE);
 
     // Parse structure and title.
     $base_info = substr($line, 0, $json_start);
@@ -176,12 +176,13 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
 
     // Extract details.
     if (!is_null($details)) {
-      $path = !empty($details->url) ? trim($details->url) : '';
-      $description = !empty($details->description) ? trim($details->description) : '';
-      $expanded = !empty($details->expanded);
-      $hidden = !empty($details->hidden);
-      $language = !empty($details->lang) && in_array($details->lang, $langs)
-                    ? $details->lang : NULL;
+      $path = empty($details['url']) ? '' : trim($details['url']);
+      $description = empty($details['description']) ? '' : trim($details['description']);
+      $expanded = !empty($details['expanded']);
+      $hidden = !empty($details['hidden']);
+      $language = !empty($details['lang']) && in_array($details['lang'], $langs)
+                    ? $details['lang'] : NULL;
+      $link_options = empty($details['options']) ? array() : $details['options'];
     }
     else {
       return _menu_import_mark_error_item($menuitem, t('malformed item details'), $line);
@@ -245,6 +246,9 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   }
   if ($expanded) {
     $menuitem['expanded'] = 1;
+  }
+  if (isset($link_options)) {
+    $menuitem['options'] = $link_options;
   }
   if ($language) {
     $menuitem['language'] = $language;
