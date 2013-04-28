@@ -20,18 +20,21 @@
  */
 function _menu_import_lookup_path($path, $title, array $options) {
   $result = array(
-    'nid' => FALSE,
+    'nid'       => FALSE,
     'link_path' => '',
-    'node_view' => FALSE
+    'node_view' => FALSE,
+    'options'   => array(),
   );
 
   // We need to handle any arguments appended to the path.
-  $query = '';
-  $path = explode('?', $path);
-  if (count($path) != 1) {
-    $query = '?' . $path[1];
+  $parsed_url = drupal_parse_url($path);
+  $path = !empty($parsed_url['path']) ? $parsed_url['path'] : '';
+  if ($parsed_url['query']) {
+    $result['options']['query'] = $parsed_url['query'];
   }
-  $path = $path[0];
+  if ($parsed_url['fragment']) {
+    $result['options']['fragment'] = $parsed_url['fragment'];
+  }
 
   // Search by alias by default.
   $system_url = drupal_lookup_path('source', $path);
@@ -44,12 +47,12 @@ function _menu_import_lookup_path($path, $title, array $options) {
 
   // Is there any registered path that is not a node link?
   if (!$node_link && drupal_valid_path($system_url)) {
-    $result['link_path'] = $system_url . $query;
+    $result['link_path'] = $system_url;
   }
   elseif ($options['link_to_content']) {
     // Link to existing content.
     if ($node_link && drupal_valid_path($system_url)) {
-      $result['link_path'] = $system_url . $query;
+      $result['link_path'] = $system_url;
       $result['nid'] = $matches[1];
       $result['node_view'] = empty($matches[2]);
     }
@@ -62,7 +65,7 @@ function _menu_import_lookup_path($path, $title, array $options) {
 
       // The node is found.
       if ($nid) {
-        $result['link_path'] = 'node/' . $nid . $query;
+        $result['link_path'] = 'node/' . $nid;
         $result['nid'] = $nid;
         $result['node_view'] = empty($matches[2]);
       }
@@ -154,6 +157,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     'weight' => 0,
     'external' => FALSE,
     'level' => 0,
+    'options' => array(),
   );
 
   // Set default language
@@ -227,6 +231,10 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   $menuitem['level'] = $level;
   $menuitem['path'] = $path;
 
+  if (!empty($link_options)) {
+    $menuitem['options'] = $link_options;
+  }
+
   if (url_is_external($path)) {
     $menuitem['external'] = TRUE;
     $menuitem['link_path'] = $path;
@@ -236,6 +244,9 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     $menuitem['link_path'] = $result['link_path'];
     $menuitem['nid'] = $result['nid'];
     $menuitem['node_view'] = $result['node_view'];
+    if ($result['options']) {
+      $menuitem['options'] = array_merge($menuitem['options'], $result['options']);
+    }
   }
 
   if ($description) {
@@ -246,9 +257,6 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   }
   if ($expanded) {
     $menuitem['expanded'] = 1;
-  }
-  if (isset($link_options)) {
-    $menuitem['options'] = $link_options;
   }
   if ($language) {
     $menuitem['language'] = $language;

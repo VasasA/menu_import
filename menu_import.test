@@ -87,7 +87,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
 '<tbody>
  <tr class="odd"><td><span title="Test description">Page 1</span></td><td>No</td><td> - </td><td> - </td><td>1</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div>Page 12</span></td><td>No</td><td>admin/structure/menu/import</td><td>admin/structure/menu/import</td><td>0</td> </tr>
- <tr class="odd"><td><span title=""><div class="indentation">&nbsp;</div>Page 13</span></td><td>No</td><td>admin/structure/menu/export?arg=val</td><td>admin/structure/menu/export?arg=val</td><td>1</td> </tr>
+ <tr class="odd"><td><span title=""><div class="indentation">&nbsp;</div>Page 13</span></td><td>No</td><td>admin/structure/menu/export?arg=val</td><td>admin/structure/menu/export</td><td>1</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div><div class="indentation">&nbsp;</div>Page 131</span></td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
  <tr class="odd"><td><span title="">Page 2</span></td><td>No</td><td> - </td><td> - </td><td>2</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div>Page 21</span></td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
@@ -126,7 +126,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
 'Home {"url":"<front>"}
 Page 1 {"url":"node\/1","description":"Test description"}
 -Page 12 {"url":"admin\/structure\/menu\/import","hidden":true}
--Page 13 {"url":"admin\/structure\/menu\/export?arg=val"}
+-Page 13 {"url":"admin\/structure\/menu\/export","options":{"query":{"arg":"val"}}}
 --Page 131 {"url":"node\/3"}
 Page 2 {"url":"node\/2","expanded":true}
 -Page 21 {"url":"node\/4"}
