@@ -489,6 +489,9 @@ function menu_import_save_menu($menu, $options) {
         $menuitem['options']['attributes']['title'] = $menuitem['description'];
       }
 
+      // Allow other modules to alter the imported data.
+      drupal_alter('menu_import', $menuitem);
+
       // Save menuitem and set mlid.
       $mlid = menu_link_save($menuitem);
       if (!$mlid) {

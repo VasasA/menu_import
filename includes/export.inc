@@ -163,6 +163,9 @@ function _menu_import_export_recurse($tree, $level, &$output) {
       }
     }
 
+    // Allow other modules to alter the exported data.
+    drupal_alter('menu_export', $link, $details);
+
     $output .=
       $indentation
       . $link['link_title']
