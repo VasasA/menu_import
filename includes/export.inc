@@ -81,7 +81,7 @@ function menu_import_export_form_submit($form, &$form_state) {
 
   if (empty($result['errors'])) {
     $filename = "$menu_name-export.txt";
-    drupal_add_http_header('Content-type', 'text/plain');
+    drupal_add_http_header('Content-Type', 'text/plain; charset=utf-8');
     drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
     drupal_send_headers();
     echo $result['menu'];
