@@ -124,7 +124,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
     $exported_menu = $this->drupalGetContent();
     $expected_exported_menu =
 'Home {"url":"<front>"}
-Page 1 {"url":"node\/1","description":"Test description"}
+Page 1 {"url":"node\/1","options":{"attributes":{"title":"Test description"}}}
 -Page 12 {"url":"admin\/structure\/menu\/import","hidden":true}
 -Page 13 {"url":"admin\/structure\/menu\/export","options":{"query":{"arg":"val"}}}
 --Page 131 {"url":"node\/3"}

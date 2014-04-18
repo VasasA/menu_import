@@ -121,7 +121,7 @@ function menu_import_export_menu($menu_name, $options) {
   // Here we bypass access control and i18n filtering of links
   // based on current/default language.
   $tree = _menu_build_tree($menu_name);
-  $tree = $tree['data'];
+  $tree = $tree['tree'];
 
   // Menu contains items.
   if (count($tree)) {
@@ -176,7 +176,10 @@ function _menu_import_export_recurse($tree, $level, &$output) {
          unset($link['options']['attributes']);
       }
       if (!empty($link['options'])) {
-        $details['options'] = $link['options'];
+        $link['options'] = unserialize($link['options']);
+        if (!empty($link['options'])) {
+          $details['options'] = $link['options'];
+        }
       }
     }
 
