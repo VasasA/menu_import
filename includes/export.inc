@@ -117,7 +117,11 @@ function menu_import_export_form_submit($form, &$form_state) {
 function menu_import_export_menu($menu_name, $options) {
   global $me_options;
   $me_options = $options;
-  $tree = menu_build_tree($menu_name);
+
+  // Here we bypass access control and i18n filtering of links
+  // based on current/default language.
+  $tree = _menu_build_tree($menu_name);
+  $tree = $tree['data'];
 
   // Menu contains items.
   if (count($tree)) {

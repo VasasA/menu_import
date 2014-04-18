@@ -181,6 +181,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     // Extract details.
     if (!is_null($details)) {
       $path = empty($details['url']) ? '' : trim($details['url']);
+      $node_uuid = !empty($details['node_uuid']) ? trim($details['node_uuid']) : NULL;
       $description = empty($details['description']) ? '' : trim($details['description']);
       $expanded = !empty($details['expanded']);
       $hidden = !empty($details['hidden']);
@@ -238,6 +239,11 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   if (url_is_external($path)) {
     $menuitem['external'] = TRUE;
     $menuitem['link_path'] = $path;
+  }
+  elseif (!empty($node_uuid)) {
+    $result = entity_get_id_by_uuid('node', array($node_uuid));
+    $menuitem['link_path'] = 'node/' . $result[$node_uuid];
+    $menuitem['nid'] = $result[$node_uuid];
   }
   else {
     $result = _menu_import_lookup_path($path, $title, $options);
