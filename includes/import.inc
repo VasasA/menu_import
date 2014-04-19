@@ -13,12 +13,14 @@
  *   Path (node/* or any other) as described in the input file.
  * @param $title
  *   Node's title as described in the input file.
+ * @param $language
+ *   Language of the path.
  * @param $options
  *   Array import options provided.
  * @return
  *   An array('nid' => '<node_id_or_false>', 'link_path' => '<path_if_exists_or_empty>').
  */
-function _menu_import_lookup_path($path, $title, array $options) {
+function _menu_import_lookup_path($path, $title, $language, array $options) {
   $result = array(
     'nid'       => FALSE,
     'link_path' => '',
@@ -37,7 +39,7 @@ function _menu_import_lookup_path($path, $title, array $options) {
   }
 
   // Search by alias by default.
-  $system_url = drupal_lookup_path('source', $path);
+  $system_url = drupal_lookup_path('source', $path, $language);
   if (!$system_url) {
     $system_url = $path;
   }
@@ -166,7 +168,8 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
   }
   $langs = array_keys(language_list());
 
-  $path = $description = $expanded = $hidden = $language = '';
+  $path = $description = $expanded = $hidden = '';
+  $language = NULL;
 
   // JSON is used.
   // @todo: make the input JSON not so strict.
@@ -246,7 +249,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     $menuitem['nid'] = $result[$node_uuid];
   }
   else {
-    $result = _menu_import_lookup_path($path, $title, $options);
+    $result = _menu_import_lookup_path($path, $title, $language, $options);
     $menuitem['link_path'] = $result['link_path'];
     $menuitem['nid'] = $result['nid'];
     $menuitem['node_view'] = $result['node_view'];
