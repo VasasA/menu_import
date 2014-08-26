@@ -172,8 +172,8 @@ function _menu_import_export_recurse($tree, $level, &$output) {
       if (!empty($details['description'])) {
         unset($link['options']['attributes']['title']);
       }
-      if (empty($link['options']['attributes'])) {
-         unset($link['options']['attributes']);
+      if (isset($link['options']['attributes']) && empty($link['options']['attributes'])) {
+        unset($link['options']['attributes']);
       }
       if (!empty($link['options'])) {
         $link['options'] = unserialize($link['options']);
