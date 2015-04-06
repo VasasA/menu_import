@@ -143,6 +143,7 @@ function _menu_import_export_recurse($tree, $level, &$output) {
 
   foreach ($tree as $data) {
     $link = $data['link'];
+    $link['options'] = unserialize($link['options']);
     $indentation = str_repeat('-', $level);
     $details = array();
 
@@ -176,7 +177,6 @@ function _menu_import_export_recurse($tree, $level, &$output) {
         unset($link['options']['attributes']);
       }
       if (!empty($link['options'])) {
-        $link['options'] = unserialize($link['options']);
         if (!empty($link['options'])) {
           $details['options'] = $link['options'];
         }
