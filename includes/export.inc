@@ -53,6 +53,13 @@ function menu_import_export_form($form, &$form_state) {
     );
   }
 
+  $form['export_weight'] = array(
+    '#type' => 'checkbox',
+    '#title' => t('Export weight'),
+    '#description' => t('Export the weight of each menu item.'),
+    '#default_value' => !empty($form_state['values']['export_weight']) ? $form_state['export_weight'] : 1,
+  );
+
   $form['sumbit'] = array(
     '#type' => 'submit',
     '#value' => t('Export'),
@@ -74,6 +81,10 @@ function menu_import_export_form_submit($form, &$form_state) {
 
   if (!empty($form_state['values']['export_uuid'])) {
     $options['export_uuid'] = $form_state['values']['export_uuid'];
+  }
+
+  if (!empty($form_state['values']['export_weight'])) {
+    $options['export_weight'] = $form_state['values']['export_weight'];
   }
 
   $options['options'] = $form_state['values']['options'];
@@ -188,6 +199,10 @@ function _menu_import_export_recurse($tree, $level, &$output) {
       if (preg_match('|^node/([0-9]+)$|', $link['link_path'], $matches)) {
         $details['node_uuid'] = uuid_get_uuid('node', 'nid', $matches[1]);
       }
+    }
+
+    if (!empty($me_options['export_weight'])) {
+      $details['weight'] = $link["weight"];
     }
 
     // Allow other modules to alter the exported data.
