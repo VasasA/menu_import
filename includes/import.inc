@@ -191,7 +191,7 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
       $hidden = !empty($details['hidden']);
       $language = !empty($details['lang']) && in_array($details['lang'], $langs)
                     ? $details['lang'] : NULL;
-      $weight = !empty($details['weight']) ? intval($details['weight']) : 0;
+      $weight = isset($details['weight']) ? intval($details['weight']) : NULL;
       $link_options = empty($details['options']) ? array() : $details['options'];
     }
     else {
