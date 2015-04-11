@@ -241,6 +241,9 @@ if (!function_exists('uuid_get_uuid')) {
     }
     $entity_info = entity_get_info($entity_type);
     $table = $entity_info['base table'];
-    return db_query("SELECT uuid FROM {" . $table . "} WHERE " . $key . " = :id", array(':id' => $id))->fetchField();
+    $query = db_select($table, 't');
+    $query->condition($key, $id);
+    $query->fields('t', array('uuid'));
+    return $query->fetchField();
   }
 }
