@@ -245,10 +245,9 @@ function menu_import_parse_line($line, $prev_level, array $weights, array $paren
     $menuitem['external'] = TRUE;
     $menuitem['link_path'] = $path;
   }
-  elseif (!empty($node_uuid)) {
-    $result = entity_get_id_by_uuid('node', array($node_uuid));
-    $menuitem['link_path'] = 'node/' . $result[$node_uuid];
-    $menuitem['nid'] = $result[$node_uuid];
+  elseif (!empty($node_uuid) && ($uuid_lookup_result = entity_get_id_by_uuid('node', array($node_uuid)))) {
+    $menuitem['link_path'] = 'node/' . $uuid_lookup_result[$node_uuid];
+    $menuitem['nid'] = $uuid_lookup_result[$node_uuid];
   }
   else {
     $result = _menu_import_lookup_path($path, $title, $language, $options);
