@@ -8,7 +8,7 @@
 /**
  * Functionality tests for menu_import module.
  */
-class MenuImportTestCase extends DrupalWebTestCase {
+class MenuImportTestCase extends BackdropWebTestCase {
 
   private $validate_hidden;
   private $validate_expanded;
@@ -23,11 +23,11 @@ class MenuImportTestCase extends DrupalWebTestCase {
 
   function setUp() {
     parent::setUp('menu_import');
-    $this->privileged_user = $this->drupalCreateUser(array(
+    $this->privileged_user = $this->backdropCreateUser(array(
       'administer menu',
       'import or export menu',
     ));
-    $this->drupalLogin($this->privileged_user);
+    $this->backdropLogin($this->privileged_user);
   }
 
   /**
@@ -39,7 +39,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
     /**
      * SUBTEST #1: import.
      */
-    $file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'menu_import') . '/tests/nolinks_3levels.txt';
+    $file = BACKDROP_ROOT . '/' . backdrop_get_path('module', 'menu_import') . '/tests/nolinks_3levels.txt';
     $validate_structure = array(
       '1' => array('12', '13' => array('131')),
       '2' => array('21' => array('211')),
@@ -63,7 +63,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
       'node_author'   => $this->privileged_user->uid,
       'node_status' => TRUE,
     );
-    $this->drupalPost($post_url, $post_data, t('Upload & preview'));
+    $this->backdropPost($post_url, $post_data, t('Upload & preview'));
 
     // Assert options are ok, and empty line was skipped.
     $this->assertText(t('Empty lines skipped: @lines.', array('@lines' => 1)));
@@ -82,7 +82,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
     $this->assertText(t('Language: not defined'));
 
     // Assert menu is parsed correctly.
-    // Drupal may change this structure.
+    // Backdrop may change this structure.
     $expected_menu =
 '<tbody>
  <tr class="odd"><td><span title="Test description">Page 1</span></td><td>No</td><td> - </td><td> - </td><td>1</td> </tr>
@@ -99,7 +99,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
     $post_data = $this->getFormHiddenFields();
 
     // Post to the same page.
-    $this->drupalPost(NULL, $post_data, t('Import'));
+    $this->backdropPost(NULL, $post_data, t('Import'));
 
     // Check report.
     $this->assertText(t('Items imported: @items.', array('@items' => $items_total)));
@@ -107,7 +107,7 @@ class MenuImportTestCase extends DrupalWebTestCase {
 
     // Validate menu structure and generated content.
     $menu_tree = menu_build_tree($menu_machine_name);
-    array_shift($menu_tree); // Remove "Home" link, Drupal may change this structure!
+    array_shift($menu_tree); // Remove "Home" link, Backdrop may change this structure!
     $this->validateMenu($validate_structure, $menu_tree);
 
 
@@ -120,8 +120,8 @@ class MenuImportTestCase extends DrupalWebTestCase {
       'options'     => 1,
     );
     $export_url = 'admin/structure/menu/export';
-    $this->drupalPost($export_url, $post_data, t('Export'));
-    $exported_menu = $this->drupalGetContent();
+    $this->backdropPost($export_url, $post_data, t('Export'));
+    $exported_menu = $this->backdropGetContent();
     $expected_exported_menu =
 'Home {"url":"<front>","weight":"0"}
 Page 1 {"url":"node\/1","description":"Test description","weight":"1"}
@@ -138,7 +138,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
      * SUBTEST #3: import with match by title.
      */
     // Test file settings to validate against.
-    $file = DRUPAL_ROOT . '/' . drupal_get_path('module', 'menu_import') . '/tests/nolinks_3levels_reordered.txt';
+    $file = BACKDROP_ROOT . '/' . backdrop_get_path('module', 'menu_import') . '/tests/nolinks_3levels_reordered.txt';
     $validate_structure = array(
       '12' => array('1', '131' => array('13')),
       '211' => array('21' => array('2')),
@@ -152,7 +152,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
       'create_content' => FALSE,
       'link_to_content' => TRUE,
     );
-    $this->drupalPost($post_url, $post_data, t('Upload & preview'));
+    $this->backdropPost($post_url, $post_data, t('Upload & preview'));
 
     // Assert options are ok.
     $this->assertText(
@@ -166,7 +166,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
     $this->assertText(t('Language: not defined'));
 
     // Assert menu is parsed correctly.
-    // Drupal may change this structure.
+    // Backdrop may change this structure.
     $expected_menu =
 '<tbody>
  <tr class="odd"><td><span title="">Page 12</span></td><td>No</td><td> - </td><td> - </td><td>3</td> </tr>
@@ -183,7 +183,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
     $post_data = $this->getFormHiddenFields();
 
     // Post to the same page.
-    $this->drupalPost(NULL, $post_data, t('Import'));
+    $this->backdropPost(NULL, $post_data, t('Import'));
 
     // Check report.
     $this->assertText(t('Items imported: @items.', array('@items' => $items_total)));
@@ -197,7 +197,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
     // Cache clear is required since some items are not updated (a bug?)
     menu_cache_clear($menu_machine_name);
     $menu_tree = menu_build_tree($menu_machine_name);
-    // Remove "Home" and two orphanes links that appeared after reorder Drupal may change this structure!
+    // Remove "Home" and two orphanes links that appeared after reorder Backdrop may change this structure!
     $menu_tree = array_slice($menu_tree, 3);
     $this->validate_expanded = array();
     $this->validate_hidden = array();

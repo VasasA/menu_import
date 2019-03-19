@@ -1,0 +1,5 @@
+[MenuImportTestCase]
+name = Menu export/import
+description = Perform various tests on menu_import module.
+group = Menu
+file = menu_import.test

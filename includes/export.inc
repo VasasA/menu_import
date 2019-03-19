@@ -105,14 +105,14 @@ function menu_import_export_form_submit($form, &$form_state) {
 
   if (empty($result['errors'])) {
     $filename = "$menu_name-export.txt";
-    drupal_add_http_header('Content-Type', 'text/plain; charset=utf-8');
-    drupal_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
-    drupal_send_headers();
+    backdrop_add_http_header('Content-Type', 'text/plain; charset=utf-8');
+    backdrop_add_http_header('Content-Disposition', 'attachment; filename="' . $filename . '"');
+    backdrop_send_headers();
     echo $result['menu'];
     exit;
   }
   else {
-    drupal_set_message($result['errors'], 'error');
+    backdrop_set_message($result['errors'], 'error');
   }
 }
 
@@ -159,7 +159,7 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     $details = array();
 
     // Use alias if exists.
-    $alias = drupal_lookup_path('alias', $link['link_path']);
+    $alias = backdrop_lookup_path('alias', $link['link_path']);
     $details['url'] = $alias ? $alias : $link['link_path'];
 
     if (!empty($link['options']['attributes']['title'])) {
@@ -206,7 +206,7 @@ function _menu_import_export_recurse($tree, $level, &$output) {
     }
 
     // Allow other modules to alter the exported data.
-    drupal_alter('menu_export', $link, $details);
+    backdrop_alter('menu_export', $link, $details);
 
     $output .=
       $indentation

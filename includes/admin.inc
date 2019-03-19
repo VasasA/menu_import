@@ -183,7 +183,7 @@ function menu_import_form_step1(&$form, &$form_state) {
     '#default_value' => !empty($form_state['values']['node_status']) ? $form_state['values']['node_status'] : 1,
   );
 
-  drupal_add_js(
+  backdrop_add_js(
     '(function($) {
       $(function() {
         $("input[name=create_content]").change(function() {
@@ -264,18 +264,19 @@ function menu_import_form_step1_submit($form, &$form_state) {
   else {
     $file = $form_state['values']['file'];
     $menu = menu_import_parse_menu_from_file($file->uri, $menu_name, $options);
-    file_delete($file);
+    $fid = $file->fid;
+    file_delete($fid);
   }
 
   if (!empty($menu['errors'])) {
     foreach ($menu['errors'] as $error) {
-      drupal_set_message(check_plain($error), 'error');
+      backdrop_set_message(check_plain($error), 'error');
     }
   }
 
   if (!empty($menu['warnings'])) {
     foreach ($menu['warnings'] as $warn) {
-      drupal_set_message($warn, 'warning');
+      backdrop_set_message($warn, 'warning');
     }
   }
 
@@ -331,7 +332,7 @@ function menu_import_display_result(array $result) {
   $msgs = menu_import_get_messages();
 
   $total_items = $result['new_nodes'] + $result['matched_nodes'] + $result['external_links'] + $result['unknown_links'];
-  drupal_set_message(t($msgs['items_imported'], array('@count' => $total_items)));
+  backdrop_set_message(t($msgs['items_imported'], array('@count' => $total_items)));
 
   if (empty($result['failed'])) {
     unset($result['failed']);
@@ -339,7 +340,7 @@ function menu_import_display_result(array $result) {
 
   foreach ($result as $type => $value) {
     $msg_type = $type == 'failed' ? 'error' : 'status';
-    drupal_set_message(t($msgs[$type], array('@count' => $value)), $msg_type);
+    backdrop_set_message(t($msgs[$type], array('@count' => $value)), $msg_type);
   }
 }
 
@@ -364,7 +365,7 @@ function menu_import_form_back_submit($form, &$form_state) {
  *   Array of import options.
  *
  * @return
- *   Array understandable by Drupal's theme engine.
+ *   Array understandable by Backdrop's theme engine.
  */
 function menu_import_preview($menu, array $options) {
   $menu_name = $menu[0]['menu_name'];

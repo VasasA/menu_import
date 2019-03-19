@@ -5,25 +5,6 @@
  */
 
 /**
- * Implementation of hook_help().
- */
-function menu_import_help($path, $arg) {
-  $output = '';
-
-  switch ($path) {
-    case 'admin/help#menu_import':
-      $output .= '<p>';
-      $output .= t('Menu Import module allows you to import a menu hierarchy from an indented (by dash or asterix symbol) text file. This can be used to either arrange pre-existing content or stub out an arrangement with new nodes containing initial content.');
-      $output .= '</p><p>';
-      $output .= t('Text files are expected to have the following structure:');
-      $output .= '</p><code>Main page<br />-Sub-page 1<br />-Sub-page 2<br />--Sub-sub-page 3</code>';
-      break;
-  }
-
-  return $output;
-}
-
-/**
  * Implementation of hook_menu().
  */
 function menu_import_menu() {
@@ -31,7 +12,7 @@ function menu_import_menu() {
 
   $items['admin/structure/menu/import'] = array(
     'title' => 'Import menu',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('menu_import_form'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 10,
@@ -41,7 +22,7 @@ function menu_import_menu() {
 
   $items['admin/structure/menu/export'] = array(
     'title' => 'Export menu',
-    'page callback' => 'drupal_get_form',
+    'page callback' => 'backdrop_get_form',
     'page arguments' => array('menu_import_export_form'),
     'type' => MENU_LOCAL_TASK,
     'weight' => 11,

@@ -1,4 +1,5 @@
-$Id
+Menu Export/Import
+==================
 
 WHAT IS THIS MODULE FOR?
 
@@ -9,7 +10,7 @@ You may need it when you want to:
 - create a menu, without specific details about where the menu links
   will point to. You may need this when you want to create a prototype of your future site,
   or when you haven't decided yet where each menu link will point to. The module will
-  create the menu for you using optionally provided external URLs or local Drupal paths.
+  create the menu for you using optionally provided external URLs or local Backdrop paths.
   See the import file structure for details.
 
 - create a menu with some/all links pointing to stub content.
@@ -24,7 +25,15 @@ You may need it when you want to:
 
 - create a site from scratch using exportables (features) and need a way to create menus
 
+Installation
+------------
+
+- Install this module using the official Backdrop CMS instructions at
+  https://backdropcms.org/guide/modules.
+	
+	
 USAGE INSTRUCTIONS
+------------------
 
 IMPORT
 
@@ -89,3 +98,30 @@ EXPORT
 3. Select the menu and your options.
 
 4. Save the file (and probably use it later for import)
+
+
+Issues
+------
+
+Bugs and Feature requests should be reported in the Issue Queue:
+https://github.com/backdrop-contrib/menu_import/issues
+
+
+Current Maintainers
+-------------------
+
+- Attila Vasas (https://github.com/vasasa).
+
+
+Credits
+-------
+
+- Ported to Backdrop CMS by Attila Vasas (https://github.com/username).
+- Originally written for Drupal by Joseph Newman (https://github.com/greenstack).
+
+
+License
+-------
+
+This project is GPL v2 software. See the LICENSE.txt file in this directory for
+complete text.

@@ -1,10 +1,9 @@
-; $Id
 name = Menu import
 description = Import menu hierarchy from an indented text file.
 package = Development
-core = 7.x
+backdrop = 1.x
 
 dependencies[] = menu
-files[] = menu_import.test
+type = module
 
 configure = admin/structure/menu/import

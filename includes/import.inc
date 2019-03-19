@@ -29,7 +29,7 @@ function _menu_import_lookup_path($path, $title, $language, array $options) {
   );
 
   // We need to handle any arguments appended to the path.
-  $parsed_url = drupal_parse_url($path);
+  $parsed_url = backdrop_parse_url($path);
   $path = !empty($parsed_url['path']) ? $parsed_url['path'] : '';
   if ($parsed_url['query']) {
     $result['options']['query'] = $parsed_url['query'];
@@ -39,7 +39,7 @@ function _menu_import_lookup_path($path, $title, $language, array $options) {
   }
 
   // Search by alias by default.
-  $system_url = drupal_lookup_path('source', $path, $language);
+  $system_url = backdrop_lookup_path('source', $path, $language);
   if (!$system_url) {
     $system_url = $path;
   }
@@ -48,12 +48,12 @@ function _menu_import_lookup_path($path, $title, $language, array $options) {
   $node_link = preg_match('|^node/(\d+)(/.*)?|', $system_url, $matches);
 
   // Is there any registered path that is not a node link?
-  if (!$node_link && drupal_valid_path($system_url)) {
+  if (!$node_link && backdrop_valid_path($system_url)) {
     $result['link_path'] = $system_url;
   }
   elseif ($options['link_to_content']) {
     // Link to existing content.
-    if ($node_link && drupal_valid_path($system_url)) {
+    if ($node_link && backdrop_valid_path($system_url)) {
       $result['link_path'] = $system_url;
       $result['nid'] = $matches[1];
       $result['node_view'] = empty($matches[2]);
@@ -86,7 +86,7 @@ function _menu_import_lookup_path($path, $title, $language, array $options) {
 function _menu_import_parse_level_title($line) {
   $matches = array();
   if (preg_match('/^([\-]+|[\*]+)?(\s+)?(.*)$/', $line, $matches)) {
-    $level = strlen($matches[1]); // No sense to use drupal_strlen on indentation.
+    $level = strlen($matches[1]); // No sense to use backdrop_strlen on indentation.
     $title = trim($matches[3]);
 
     return array($level, $title);
@@ -110,7 +110,7 @@ function _menu_import_mark_error_item($item, $error, $original) {
  * and 0 otherwise.
  */
 function _menu_import_body_is_translatable() {
-  $body_trans = &drupal_static(__FUNCTION__, NULL);
+  $body_trans = &backdrop_static(__FUNCTION__, NULL);
 
   if (is_null($body_trans)) {
     if (db_field_exists('field_config', 'translatable')) {
@@ -500,7 +500,7 @@ function menu_import_save_menu($menu, $options) {
       }
 
       // Allow other modules to alter the imported data.
-      drupal_alter('menu_import', $menuitem);
+      backdrop_alter('menu_import', $menuitem);
 
       // Save menuitem and set mlid.
       $mlid = menu_link_save($menuitem);
@@ -536,9 +536,7 @@ function menu_import_save_menu($menu, $options) {
  *   Node's nid field.
  */
 function menu_import_create_node($options) {
-  $node = new stdClass();
-
-  $node->type     = $options['node_type'];
+  $node = entity_create('node', array ('type' => $options['node_type'])); 
   $node->language = $options['language'];
   $node->title    = $options['node_title'];
 
@@ -558,7 +556,7 @@ function menu_import_create_node($options) {
     }
   }
 
-  node_save($node);
+  $node -> save();
   return $node->nid;
 }
 
@@ -569,7 +567,7 @@ function menu_import_create_node($options) {
  *   Array describing the menu item.
  */
 function menu_import_delete_node_menuitem($menuitem) {
-  $processed_items = &drupal_static(__FUNCTION__, array());
+  $processed_items = &backdrop_static(__FUNCTION__, array());
   $path = 'node/' . $menuitem['nid'];
   if (!in_array($path, $processed_items)) {
     $mlid = db_query('SELECT mlid FROM {menu_links} WHERE menu_name=:menu AND link_path=:path',
