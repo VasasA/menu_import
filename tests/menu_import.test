@@ -49,7 +49,7 @@ class MenuImportTestCase extends BackdropWebTestCase {
     $items_total = 7;
     $content_items = 5; // 2 items are links
     $menu_machine_name = 'main-menu';
-    $menu_title = 'Main menu';
+    $menu_title = 'Primary navigation';
     $post_url = 'admin/structure/menu/import';
     // End of test file settings.
 
@@ -85,11 +85,11 @@ class MenuImportTestCase extends BackdropWebTestCase {
     // Backdrop may change this structure.
     $expected_menu =
 '<tbody>
- <tr class="odd"><td><span title="Test description">Page 1</span></td><td>No</td><td> - </td><td> - </td><td>1</td> </tr>
+ <tr class="odd"><td><span title="Test description">Page 1</span></td><td>No</td><td> - </td><td> - </td><td>2</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div>Page 12</span></td><td>No</td><td>admin/structure/menu/import</td><td>admin/structure/menu/import</td><td>0</td> </tr>
  <tr class="odd"><td><span title=""><div class="indentation">&nbsp;</div>Page 13</span></td><td>No</td><td>admin/structure/menu/export?arg=val</td><td>admin/structure/menu/export</td><td>1</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div><div class="indentation">&nbsp;</div>Page 131</span></td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
- <tr class="odd"><td><span title="">Page 2</span></td><td>No</td><td> - </td><td> - </td><td>2</td> </tr>
+ <tr class="odd"><td><span title="">Page 2</span></td><td>No</td><td> - </td><td> - </td><td>3</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div>Page 21</span></td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
  <tr class="odd"><td><span title=""><div class="indentation">&nbsp;</div><div class="indentation">&nbsp;</div>Page 211</span></td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
 </tbody>';
@@ -108,6 +108,7 @@ class MenuImportTestCase extends BackdropWebTestCase {
     // Validate menu structure and generated content.
     $menu_tree = menu_build_tree($menu_machine_name);
     array_shift($menu_tree); // Remove "Home" link, Backdrop may change this structure!
+		array_shift($menu_tree); // Remove "About" link, Backdrop may change this structure!
     $this->validateMenu($validate_structure, $menu_tree);
 
 
@@ -123,14 +124,15 @@ class MenuImportTestCase extends BackdropWebTestCase {
     $this->backdropPost($export_url, $post_data, t('Export'));
     $exported_menu = $this->backdropGetContent();
     $expected_exported_menu =
-'Home {"url":"<front>","weight":"0"}
-Page 1 {"url":"node\/1","description":"Test description","weight":"1"}
+'About {"url":"about","weight":"1"}
+Home {"url":"<front>","weight":"-1"}
+Page 1 {"url":"page-1","description":"Test description","weight":"2"}
 -Page 12 {"url":"admin\/structure\/menu\/import","hidden":true,"weight":"0"}
 -Page 13 {"url":"admin\/structure\/menu\/export","options":{"query":{"arg":"val"}},"weight":"1"}
---Page 131 {"url":"node\/3","weight":"0"}
-Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
--Page 21 {"url":"node\/4","weight":"0"}
---Page 211 {"url":"node\/5","weight":"0"}
+--Page 131 {"url":"page-131","weight":"0"}
+Page 2 {"url":"page-2","expanded":true,"weight":"3"}
+-Page 21 {"url":"page-21","weight":"0"}
+--Page 211 {"url":"page-211","weight":"0"}
 ';
     $this->assertEqual($exported_menu, $expected_exported_menu, 'Exported menu ok.');
 
@@ -144,7 +146,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
       '211' => array('21' => array('2')),
     );
     // Element's index is the id of the node referenced by menu item.
-    $node_ids = array(0, '1', '2', '131', '21', '211');
+    $node_ids = array(0, 'Home', 'About', '1', '2', '131', '21', '211');
 
     $post_data = array(
       'menu_name' => 'main-menu',
@@ -169,11 +171,11 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
     // Backdrop may change this structure.
     $expected_menu =
 '<tbody>
- <tr class="odd"><td><span title="">Page 12</span></td><td>No</td><td> - </td><td> - </td><td>3</td> </tr>
+ <tr class="odd"><td><span title="">Page 12</span></td><td>No</td><td> - </td><td> - </td><td>4</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div>Page 1</span></td><td>Yes</td><td> - </td><td>node/' . array_search('1', $node_ids) . '</td><td>0</td> </tr>
  <tr class="odd"><td><span title=""><div class="indentation">&nbsp;</div>Page 131</span></td><td>Yes</td><td> - </td><td>node/' . array_search('131', $node_ids) . '</td><td>1</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div><div class="indentation">&nbsp;</div>Page 13</span></td><td>No</td><td> - </td><td> - </td><td>0</td> </tr>
- <tr class="odd"><td><span title="">Page 211</span></td><td>Yes</td><td> - </td><td>node/' . array_search('211', $node_ids) . '</td><td>4</td> </tr>
+ <tr class="odd"><td><span title="">Page 211</span></td><td>Yes</td><td> - </td><td>node/' . array_search('211', $node_ids) . '</td><td>5</td> </tr>
  <tr class="even"><td><span title=""><div class="indentation">&nbsp;</div>Page 21</span></td><td>Yes</td><td> - </td><td>node/' . array_search('21', $node_ids) . '</td><td>0</td> </tr>
  <tr class="odd"><td><span title=""><div class="indentation">&nbsp;</div><div class="indentation">&nbsp;</div>Page 2</span></td><td>Yes</td><td> - </td><td>node/' . array_search('2', $node_ids) . '</td><td>0</td> </tr>
 </tbody>';
@@ -198,7 +200,7 @@ Page 2 {"url":"node\/2","expanded":true,"weight":"2"}
     menu_cache_clear($menu_machine_name);
     $menu_tree = menu_build_tree($menu_machine_name);
     // Remove "Home" and two orphanes links that appeared after reorder Backdrop may change this structure!
-    $menu_tree = array_slice($menu_tree, 3);
+    $menu_tree = array_slice($menu_tree, 4);
     $this->validate_expanded = array();
     $this->validate_hidden = array();
     $this->validateMenu($validate_structure, $menu_tree);
