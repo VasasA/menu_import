@@ -13,14 +13,6 @@ class MenuImportTestCase extends BackdropWebTestCase {
   private $validate_hidden;
   private $validate_expanded;
 
-  public static function getInfo() {
-    return array(
-      'name' => 'Menu export/import',
-      'description' => 'Perform various tests on menu_import module.',
-      'group' => 'Menu',
-    );
-  }
-
   function setUp() {
     parent::setUp('menu_import');
     $this->privileged_user = $this->backdropCreateUser(array(
@@ -108,7 +100,7 @@ class MenuImportTestCase extends BackdropWebTestCase {
     // Validate menu structure and generated content.
     $menu_tree = menu_build_tree($menu_machine_name);
     array_shift($menu_tree); // Remove "Home" link, Backdrop may change this structure!
-		array_shift($menu_tree); // Remove "About" link, Backdrop may change this structure!
+    array_shift($menu_tree); // Remove "About" link, Backdrop may change this structure!
     $this->validateMenu($validate_structure, $menu_tree);
 
 
