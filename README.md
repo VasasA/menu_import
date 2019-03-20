@@ -42,16 +42,17 @@ IMPORT
 2. Prepare a site map file
 
   Menu structure must follow this example:
-
+```
     Page1
     - Page2
     - Page3
     Page4
     - Page5
     -- Page6
+```
 
   or this
-
+```
   Page1
   * Page2
   ** Page3
@@ -59,6 +60,7 @@ IMPORT
   * Page5
   ** Page6
   *** Page7
+```
 
   You may optionally specify path alias (alternative path)
   or external URL. You need to put it after node's title using JSON format:
@@ -67,13 +69,14 @@ IMPORT
   Use examples from "tests" directory for better understanding of the syntax.
 
   Here is a quick sample:
+```
     Page1 {"url": "node/1", "description": "This is an optional description"}
     - Page2 {"hidden":true}
     - Page3 {"description": "The line above and this one will point to <front>"}
     Page4 {"url": "http://domain.com/", "description": "Visit domain.com!", "expanded":true}
     - Page5 {"url": "http://mail.com/index.php"}
     -- Page6 {"url": "non/existent/path", "description": "will be replaced with <front>"}
-
+```
   Space(s) between indentation symbol "*" or "-" and menu/node title are optional,
   however you cannot put spaces between indentation symbols like "* * *" or "-- - -".
 
@@ -116,7 +119,7 @@ Current Maintainers
 Credits
 -------
 
-- Ported to Backdrop CMS by Attila Vasas (https://github.com/username).
+- Ported to Backdrop CMS by Attila Vasas (https://github.com/vasasa).
 - Originally written for Drupal by Joseph Newman (https://github.com/greenstack).
 
 
