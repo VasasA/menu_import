@@ -1,6 +1,9 @@
-name = Menu import
-description = Import menu hierarchy from an indented text file.
+name = Menu Export/Import
+description = Import and export menu hierarchy using indented, JSON-like text files.
 package = Development
+tags[] = Menus
+tags[] = Site Architecture
+tags[] = Structure
 backdrop = 1.x
 
 dependencies[] = menu
