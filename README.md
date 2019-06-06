@@ -110,8 +110,8 @@ Bugs and Feature requests should be reported in the Issue Queue:
 https://github.com/backdrop-contrib/menu_import/issues
 
 
-Current Maintainers
--------------------
+Current Maintainer
+------------------
 
 - Attila Vasas (https://github.com/vasasa).
 
@@ -120,7 +120,7 @@ Credits
 -------
 
 - Ported to Backdrop CMS by Attila Vasas (https://github.com/vasasa).
-- Originally written for Drupal by Joseph Newman (https://github.com/greenstack).
+- Originally written for Drupal by lex0r (https://www.drupal.org/u/lex0r).
 
 
 License
@@ -128,3 +128,13 @@ License
 
 This project is GPL v2 software. See the LICENSE.txt file in this directory for
 complete text.
+
+
+Screenshots
+-----------
+
+Menu export:
+![menu export screenshot](https://github.com/backdrop-contrib/menu_import/blob/1.x-1.x/images/screenshot_export.png)
+
+Menu import:
+![menu import screenshot](https://github.com/backdrop-contrib/menu_import/blob/1.x-1.x/images/screenshot_import.png)
